@@ -1,0 +1,5 @@
+extern/
+.venv/
+.vscode/
+build/
+__pycache__/
