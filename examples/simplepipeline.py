@@ -28,9 +28,6 @@ class Stage1(ff_node):
 class Stage2(ff_node):
     def __init__(self):
         ff_node.__init__(self)
-    
-    def svc_init(self):
-        return 0
 
     def svc(self, args):
         print("Got", args, "from previous stage")

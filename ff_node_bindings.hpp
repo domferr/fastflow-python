@@ -12,16 +12,6 @@ public:
     /* Inherit the constructors */
     using ff_node::ff_node;
 
-    int svc_init() override {
-        /* PYBIND11_OVERRIDE will acquire the GIL before accessing Python state */
-        PYBIND11_OVERRIDE(
-            int,                /* Return type */
-            ff_node_wrapper,    /* Parent class */
-            svc_init,           /* Name of function in C++ (must match Python name) */
-                                /* Argument(s) */
-        );
-    }
-
     virtual py::object svc(py::object& obj) = 0;
 
     void * svc(void *arg) override {
@@ -48,16 +38,6 @@ public:
         
         return (void*) ((PyObject*) retobj.ptr());
     }
-    
-    void svc_end() {
-        /* PYBIND11_OVERRIDE will acquire the GIL before accessing Python state */
-        PYBIND11_OVERRIDE(
-            void,               /* Return type */
-            ff_node_wrapper,    /* Parent class */
-            svc_end,            /* Name of function in C++ (must match Python name) */
-                                /* Argument(s) */
-        );
-    }
 
     bool py_ff_send_out(py::object& task, int id = -1,
         unsigned long retry = ((unsigned long)-1),
@@ -72,6 +52,16 @@ public:
     /* Inherit the constructors */
     using ff_node_wrapper::ff_node_wrapper;
 
+    int svc_init() override {
+        /* PYBIND11_OVERRIDE will acquire the GIL before accessing Python state */
+        PYBIND11_OVERRIDE(
+            int,                /* Return type */
+            ff_node_wrapper,    /* Parent class */
+            svc_init,           /* Name of function in C++ (must match Python name) */
+                                /* Argument(s) */
+        );
+    }
+
     py::object svc(py::object& obj) override {
         /* PYBIND11_OVERRIDE_PURE will acquire the GIL before accessing Python state */
         PYBIND11_OVERRIDE_PURE(
@@ -79,6 +69,16 @@ public:
             ff_node_wrapper,    /* Parent class */
             svc,                /* Name of function in C++ (must match Python name) */
             obj                 /* Argument(s) */
+        );
+    }
+    
+    void svc_end() {
+        /* PYBIND11_OVERRIDE will acquire the GIL before accessing Python state */
+        PYBIND11_OVERRIDE(
+            void,               /* Return type */
+            ff_node_wrapper,    /* Parent class */
+            svc_end,            /* Name of function in C++ (must match Python name) */
+                                /* Argument(s) */
         );
     }
 };

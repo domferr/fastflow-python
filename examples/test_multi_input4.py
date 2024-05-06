@@ -13,25 +13,16 @@ NUMTASKS = 1000;
 class Stage1(ff_node):
     def __init__(self):
         ff_node.__init__(self)
-
-    def svc_init(self):
-        return 0
     
     def svc(self, *args):
         for i in range(1, NUMTASKS):
             self.ff_send_out(i)
 
         return STOP
-    
-    def svc_end(self):
-        pass
 
 class Stage2(ff_minode):
     def __init__(self):
         ff_minode.__init__(self)
-
-    def svc_init(self):
-        return 0
     
     def svc(self, arg):
         print(f"Stage2 got task from {self.get_channel_id()}")
@@ -43,24 +34,14 @@ class Stage2(ff_minode):
     def eosnotify(self, *args):
         self.ff_send_out(EOS)
 
-    def svc_end(self):
-        pass
-
 class Stage3(ff_node):
     def __init__(self):
         ff_node.__init__(self)
-
-    def svc_init(self):
-        return 0
     
     def svc(self, arg):
         print(f"Stage3: got {arg}, sending it back")
 
         return arg
-
-    # todo: svc_end and svc_init MUST be defined
-    def svc_end(self):
-        pass
 
 def main():
     s1 = Stage1()

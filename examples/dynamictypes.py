@@ -28,7 +28,11 @@ class Dummy:
 class Stage1(ff_node):
     def __init__(self):
         ff_node.__init__(self)
+    
+    def svc_init(self):
+        log("init first stage")
         self.counter = 0
+        return 0
 
     def svc(self, args):
         if self.counter > 5:
@@ -43,10 +47,6 @@ class Stage1(ff_node):
 
         self.counter = self.counter + 1
         return next_value
-    
-    def svc_init(self):
-        log("init first stage")
-        return 0
     
     def svc_end(self):
         log("first stage ended")
