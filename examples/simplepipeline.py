@@ -9,13 +9,13 @@ class Stage1(ff_node):
         ff_node.__init__(self)
     
     def svc_init(self):
-        self.counter = 1 # todo: we have a bug if counter is 0
+        self.counter = 0
         return 0
 
     def svc(self, args):
         value_to_next_stage = self.counter
         if self.counter > 10:
-            return STOP
+            return STOP # bug: return None is equivalent to return STOP
         
         self.counter = self.counter + 1
         print("Hi!")

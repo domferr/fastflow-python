@@ -22,7 +22,7 @@ public:
         );
     }
 
-    virtual py::object svc(py::object obj) = 0;
+    virtual py::object svc(py::object& obj) = 0;
 
     void * svc(void *arg) override {
         // Acquire the GIL while in this scope.
@@ -59,7 +59,7 @@ public:
         );
     }
 
-    bool py_ff_send_out(py::object task, int id = -1,
+    bool py_ff_send_out(py::object& task, int id = -1,
         unsigned long retry = ((unsigned long)-1),
         unsigned long ticks = (TICKS2WAIT)) {
         task.inc_ref();
@@ -72,7 +72,7 @@ public:
     /* Inherit the constructors */
     using ff_node_wrapper::ff_node_wrapper;
 
-    py::object svc(py::object obj) override {
+    py::object svc(py::object& obj) override {
         /* PYBIND11_OVERRIDE_PURE will acquire the GIL before accessing Python state */
         PYBIND11_OVERRIDE_PURE(
             py::object,         /* Return type */
@@ -86,7 +86,7 @@ public:
 void ff_node_bindings(py::module_ &m) {
     py::class_<ff_node_wrapper, py_ff_node>(m, "ff_node")
         .def(py::init<>())
-        .def("svc", static_cast<py::object (ff_node_wrapper::*)(py::object)>(&ff_node_wrapper::svc), py::return_value_policy::automatic_reference)
+        .def("svc", static_cast<py::object (ff_node_wrapper::*)(py::object&)>(&ff_node_wrapper::svc), py::return_value_policy::automatic_reference)
         .def("svc_init", &ff_node_wrapper::svc_init)
         .def("svc_end", &ff_node_wrapper::svc_end)
         .def(

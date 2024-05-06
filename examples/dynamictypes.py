@@ -21,14 +21,14 @@ class Dummy:
         self.value = value
 
     def __str__(self) -> str:
-        return f"{self.value}"
+        return f"Dummy({self.value})"
     
     __repr__ = __str__
 
 class Stage1(ff_node):
     def __init__(self):
         ff_node.__init__(self)
-        self.counter = 1
+        self.counter = 0
 
     def svc(self, args):
         if self.counter > 5:

@@ -6,7 +6,7 @@
 
 namespace py = pybind11;
 
-auto PY_STOP  = py::cast(NULL);
+auto PY_STOP  = py::cast((void*) NULL);
 auto PY_GO_ON = py::cast(ff::FF_GO_ON);
 auto PY_EOS   = py::cast(ff::FF_EOS);
 
