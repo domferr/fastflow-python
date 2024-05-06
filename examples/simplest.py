@@ -1,3 +1,5 @@
+# python version of tests/simplest.cpp
+
 from fastflow import ff_pipeline, ff_node, STOP, GO_ON
 
 class Stage(ff_node):
@@ -19,7 +21,7 @@ class Stage(ff_node):
         return GO_ON
     
     def svc_end(self):
-        print("second stage ended")
+        print("stage ended")
 
 def main():
     pipe = ff_pipeline()

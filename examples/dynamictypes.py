@@ -1,4 +1,5 @@
-# Just a pipeline with two stages
+# Just a pipeline with two stages, but the values sent by the first stage
+# are objects or tuples.
 #
 #   Stage1 -----> Stage2
 
@@ -18,9 +19,6 @@ class Dummy:
     def __init__(self, value):
         log('Dummy created.')
         self.value = value
- 
-    def __del__(self):
-        log(f"Destructor called of value {self.value}")
 
     def __str__(self) -> str:
         return f"{self.value}"
@@ -33,13 +31,14 @@ class Stage1(ff_node):
         self.counter = 1
 
     def svc(self, args):
-        if int(self.counter) > 10:
+        if self.counter > 5:
             return STOP
         
         if self.counter > 1:
             active_wait(500)
 
-        next_value = Dummy(self.counter)
+        # send object if counter is even, a tuple otherwise
+        next_value = Dummy(self.counter) if self.counter % 2 == 0 else (self.counter, self.counter/2, Dummy(self.counter))
         log("Send", next_value, "to next stage")
 
         self.counter = self.counter + 1
@@ -61,7 +60,7 @@ class Stage2(ff_node):
         return 0
 
     def svc(self, args):
-        log("stage 2 got:", args)
+        log("stage 2 got:", args, "-> type", type(args))
         active_wait(1500)
         return GO_ON
     

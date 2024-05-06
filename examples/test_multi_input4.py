@@ -1,8 +1,12 @@
-from fastflow import ff_pipeline, ff_node, ff_minode, STOP, GO_ON, EOS
-
+# Python version of tests/test_multi_input4.cpp
+#
 #   Stage1 -----> Stage2 -----> Stage3
 #                  ^               |
 #                   \--------------   
+
+from fastflow import ff_pipeline, ff_node, ff_minode, STOP, GO_ON, EOS
+
+
 
 NUMTASKS = 1000;
 
