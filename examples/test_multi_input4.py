@@ -51,14 +51,14 @@ def main():
     pipe2.add_stage(s3)
 
     if pipe2.wrap_around() < 0:
-        raise("wrap_around")
+        raise RuntimeError("wrap_around")
 
     pipe = ff_pipeline()
     pipe.add_stage(s1)
     pipe.add_stage(pipe2)
     
     if pipe.run_and_wait_end() < 0:
-        raise("running pipe")
+        raise RuntimeError("running pipe")
     
     print("DONE")
     

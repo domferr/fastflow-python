@@ -5,7 +5,8 @@
 ## To do
 - [x] Bindings of **ff_pipeline** (main functions only)
 - [x] Bindings of **ff_node** (main functions only)
-- [x] Bindings of **ff_minode** (main functions only
+- [x] Bindings of **ff_minode** (main functions only)
+- [x] Bindings of **ff_monode** (main functions only)
 - [x] Computation is parallel
 - [x] svc function can support any python object of any type (**dynamic typing**)
 - [x] Simple example with one ff_node

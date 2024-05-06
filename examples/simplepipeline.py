@@ -47,7 +47,7 @@ def main():
 
     # blocking call: run the pipeline and wait for it to end
     if pipe.run_and_wait_end() < 0:
-        raise("running pipeline") # throw exception if there is a failure
+        raise RuntimeError("running pipeline") # throw exception if there is a failure
     
     # print stats
     print("DONE, time =", pipe.ffTime(), "(ms)")

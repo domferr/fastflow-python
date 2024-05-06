@@ -5,6 +5,7 @@
 #include <ff/ff.hpp>
 #include "ff_node_bindings.hpp"
 #include "ff_minode_bindings.hpp"
+#include "ff_monode_bindings.hpp"
 
 namespace py = pybind11;
 
@@ -14,7 +15,7 @@ void ff_pipeline_bindings(py::module_ &m) {
             The ff_pipeline constructor
         )mydelimiter")
         .def(
-            "add_stage",
+            "add_stage", // add ff_node stage
             static_cast<int (ff::ff_pipeline::*)(py_ff_node *, bool)>(&ff::ff_pipeline::add_stage),
             py::arg("s"),
             py::arg("cleanup") = false, 
@@ -22,7 +23,7 @@ void ff_pipeline_bindings(py::module_ &m) {
                 The add_stage function
             )mydelimiter")
         .def(
-            "add_stage",
+            "add_stage", // add ff_pipeline stage
             static_cast<int (ff::ff_pipeline::*)(ff::ff_pipeline *, bool)>(&ff::ff_pipeline::add_stage),
             py::arg("s"),
             py::arg("cleanup") = false, 
@@ -30,8 +31,16 @@ void ff_pipeline_bindings(py::module_ &m) {
                 The add_stage function
             )mydelimiter")
         .def(
-            "add_stage",
+            "add_stage", // add ff_minode stage
             static_cast<int (ff::ff_pipeline::*)(py_ff_minode *, bool)>(&ff::ff_pipeline::add_stage),
+            py::arg("s"),
+            py::arg("cleanup") = false, 
+            R"mydelimiter(
+                The add_stage function
+            )mydelimiter")
+        .def(
+            "add_stage", // add ff_monode stage
+            static_cast<int (ff::ff_pipeline::*)(py_ff_monode *, bool)>(&ff::ff_pipeline::add_stage),
             py::arg("s"),
             py::arg("cleanup") = false, 
             R"mydelimiter(

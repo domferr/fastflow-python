@@ -29,7 +29,7 @@ def main():
     pipe.add_stage(stage) # todo: why pipe.add_stage(Stage()) does segmentation fault?
     
     if pipe.run_and_wait_end() < 0:
-        raise("running pipeline")
+        raise RuntimeError("running pipeline")
     
     print("DONE, pipe  time=", pipe.ffTime(), "(ms)")
     

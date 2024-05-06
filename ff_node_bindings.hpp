@@ -27,15 +27,16 @@ public:
            // std::cout << "build object from argument. (ref count = " << obj.ref_count() << ")" << std::endl;
         }
         auto retobj = svc(obj);
-        // since it was returned, its ref count was decreased
-        // however it is now owned by c++ side
-        // so increase ref count
-        retobj.inc_ref();
-        //std::cout << "retobj ptr " << retobj.ptr() << std::endl;
 
         if (retobj.is(PY_STOP)) return NULL;
-        if (retobj.is(PY_EOS)) return ff::FF_EOS;
-        if (retobj.is(PY_GO_ON)) return ff::FF_GO_ON;
+        else if (retobj.is(PY_EOS)) return ff::FF_EOS;
+        else if (retobj.is(PY_GO_ON)) return ff::FF_GO_ON;
+        else {
+            // since it was returned, its ref count was decreased
+            // however it is now owned by c++ side
+            // so increase ref count
+            retobj.inc_ref();
+        }
         
         return (void*) ((PyObject*) retobj.ptr());
     }

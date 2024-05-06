@@ -3,3 +3,4 @@ extern/
 .vscode/
 build/
 __pycache__/
+cpptests/
