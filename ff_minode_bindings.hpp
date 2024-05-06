@@ -33,18 +33,24 @@ public:
         retobj.inc_ref();
         //std::cout << "retobj ptr " << retobj.ptr() << std::endl;
 
-        if (retobj.ptr() == PY_STOP.ptr()) return NULL;
-        if (retobj.ptr() == PY_EOS.ptr())  return ff::FF_EOS;
-        if (retobj.ptr() == PY_GO_ON.ptr()) return ff::FF_GO_ON;
+        if (retobj.is(PY_STOP)) return NULL;
+        if (retobj.is(PY_EOS)) return ff::FF_EOS;
+        if (retobj.is(PY_GO_ON)) return ff::FF_GO_ON;
         
         return (void*) ((PyObject*) retobj.ptr());
     }
 
-    bool py_ff_send_out(py::object& task, int id = -1,
+    bool py_ff_send_out(py::object& obj, int id = -1,
         unsigned long retry = ((unsigned long)-1),
         unsigned long ticks = (TICKS2WAIT)) {
-        task.inc_ref();
-        return ff_send_out((void*) ((PyObject*) task.ptr()), id, retry, ticks);
+        void * task = (void*) ((PyObject*) obj.ptr());
+
+        if (obj.is(PY_STOP)) task = NULL;
+        else if (obj.is(PY_EOS)) task = ff::FF_EOS;
+        else if (obj.is(PY_GO_ON)) task = ff::FF_GO_ON;
+        else obj.inc_ref();
+
+        return ff_send_out(task, id, retry, ticks);
     }
 };
 

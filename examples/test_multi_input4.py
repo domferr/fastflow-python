@@ -6,16 +6,14 @@
 
 from fastflow import ff_pipeline, ff_node, ff_minode, STOP, GO_ON, EOS
 
-
-
-NUMTASKS = 1000;
+NUMTASKS = 1000
 
 class Stage1(ff_node):
     def __init__(self):
         ff_node.__init__(self)
     
     def svc(self, *args):
-        for i in range(1, NUMTASKS):
+        for i in range(1, NUMTASKS+1):
             self.ff_send_out(i)
 
         return STOP
