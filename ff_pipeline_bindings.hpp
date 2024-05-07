@@ -17,6 +17,7 @@ void ff_pipeline_bindings(py::module_ &m) {
         .def(
             "add_stage", // add ff_node stage
             static_cast<int (ff::ff_pipeline::*)(py_ff_node *, bool)>(&ff::ff_pipeline::add_stage),
+            py::keep_alive<1, 2>(),
             py::arg("s"),
             py::arg("cleanup") = false, 
             R"mydelimiter(
@@ -25,6 +26,7 @@ void ff_pipeline_bindings(py::module_ &m) {
         .def(
             "add_stage", // add ff_pipeline stage
             static_cast<int (ff::ff_pipeline::*)(ff::ff_pipeline *, bool)>(&ff::ff_pipeline::add_stage),
+            py::keep_alive<1, 2>(),
             py::arg("s"),
             py::arg("cleanup") = false, 
             R"mydelimiter(
@@ -33,6 +35,7 @@ void ff_pipeline_bindings(py::module_ &m) {
         .def(
             "add_stage", // add ff_minode stage
             static_cast<int (ff::ff_pipeline::*)(py_ff_minode *, bool)>(&ff::ff_pipeline::add_stage),
+            py::keep_alive<1, 2>(),
             py::arg("s"),
             py::arg("cleanup") = false, 
             R"mydelimiter(
@@ -41,6 +44,7 @@ void ff_pipeline_bindings(py::module_ &m) {
         .def(
             "add_stage", // add ff_monode stage
             static_cast<int (ff::ff_pipeline::*)(py_ff_monode *, bool)>(&ff::ff_pipeline::add_stage),
+            py::keep_alive<1, 2>(),
             py::arg("s"),
             py::arg("cleanup") = false, 
             R"mydelimiter(

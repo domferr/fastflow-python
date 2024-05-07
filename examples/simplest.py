@@ -25,8 +25,7 @@ class Stage(ff_node):
 
 def main():
     pipe = ff_pipeline()
-    stage = Stage()
-    pipe.add_stage(stage) # todo: why pipe.add_stage(Stage()) does segmentation fault?
+    pipe.add_stage(Stage())
     
     if pipe.run_and_wait_end() < 0:
         raise RuntimeError("running pipeline")

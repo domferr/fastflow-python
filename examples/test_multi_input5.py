@@ -19,8 +19,7 @@ class Stage0(ff_minode):
     def svc(self, task):
         if task == ():
             for i in range(1, NUMTASKS + 1):
-                val = i
-                self.ff_send_out(val)
+                self.ff_send_out(i)
             return GO_ON
         
         print(f"Stage0 got back {task} from {self.get_channel_id()} (counter={self.counter + 1})")

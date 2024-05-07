@@ -50,7 +50,6 @@ public:
         if (obj.is(PY_STOP)) task = NULL;
         else if (obj.is(PY_EOS)) task = ff::FF_EOS;
         else if (obj.is(PY_GO_ON)) task = ff::FF_GO_ON;
-        else obj.inc_ref();
 
         return ff_send_out(task, id, retry, ticks);
     }
@@ -111,6 +110,7 @@ void ff_minode_bindings(py::module_ &m) {
         .def(
             "ff_send_out", 
             &ff_minode_wrapper::py_ff_send_out,
+            py::keep_alive<1, 2>(),
             py::arg("task"),
             py::arg("id") = -1,
             py::arg("retry") = ((unsigned long)-1),
