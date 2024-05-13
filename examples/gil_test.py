@@ -11,26 +11,13 @@ def active_wait(ms):
     while ((time.time_ns() // 1_000_000) < ms+current_time):
         pass
 
-def false_wait():
+def busy_work():
     i = 0
     while (i < 40000000):
         i = i + 1
 
 def log(*args, **kwargs):
     print(f"[{datetime.now().strftime('%H:%M:%S.%f')}]", *args, **kwargs, flush=True)
-
-class Dummy:
-    def __init__(self, value):
-    #    log('Dummy created.')
-        self.value = value
- 
-    #def __del__(self):
-    #    log(f"Destructor called of value {self.value}")
-
-    def __str__(self) -> str:
-        return f"{self.value}"
-    
-    __repr__ = __str__
 
 class Stage1(ff_node):
     def __init__(self):
@@ -43,8 +30,8 @@ class Stage1(ff_node):
         
         #if self.counter > 1:
         #    active_wait(500)
-        false_wait()
-        next_value = Dummy(self.counter)
+        busy_work()
+        next_value = self.counter
         #log("Send", next_value, "to next stage")
 
         self.counter = self.counter + 1
@@ -60,7 +47,7 @@ class Stage2(ff_node):
     def svc(self, args):
         #log("stage 2 got:", args)
         log("start")
-        false_wait()
+        #busy_work()
         log("end")
         #active_wait(1000)
         return GO_ON
