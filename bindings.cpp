@@ -2,8 +2,8 @@
 #include <ff/ff.hpp>
 #include "ff_pipeline_bindings.hpp"
 #include "ff_node_bindings.hpp"
-#include "ff_minode_bindings.hpp"
-#include "ff_monode_bindings.hpp"
+/*#include "ff_minode_bindings.hpp"
+#include "ff_monode_bindings.hpp"*/
 #include "ff_const_bindings.hpp"
 
 namespace py = pybind11;
@@ -18,7 +18,7 @@ PYBIND11_MODULE(fastflow, m) {
     ff_pipeline_bindings(m);
     
     /* ff_node */
-    ff_node_bindings(m);
+    //ff_node_bindings(m);
     
     /* ff_minode */
     ff_minode_bindings(m);
