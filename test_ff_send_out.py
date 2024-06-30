@@ -3,6 +3,11 @@ import inspect
 import fastflow
 from fastflow import ff_pipeline, STOP
 
+class Custom:
+    def __init__(self, v):
+        self.value1 = "this is a str"
+        self.value2 = (10, v)
+
 class Stage1():    
     def svc(self, *args):
         for count in range(1, 4):
@@ -13,13 +18,13 @@ class Stage1():
             while (i < 40000000):
                 i = i + 1
 
-            self.ff_send_out(count)
+            self.ff_send_out(Custom(count))
             
         return STOP
 
 class Stage2():
     def svc(self, args):
-        print("[2] Stage2 svc called with", args)
+        print("[2] Stage2 svc called with", args, args.value1, args.value2)
 
         # busy_work
         i = 0

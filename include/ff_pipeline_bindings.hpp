@@ -126,6 +126,11 @@ class ff_const:
 
 STOP = ff_const(0)
 
+class Custom:
+    def __init__(self, v):
+        self.value1 = "this is a str"
+        self.value2 = (10, v)
+
 CLASS_SRC
 
     # add the _fastflow_prepare function to the class
