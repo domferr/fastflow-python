@@ -46,6 +46,6 @@ def build_pipe(use_subinterpreters = True):
     pipe.add_stage(stage2)
     return pipe
 
-pipe = build_pipe()
+pipe = build_pipe(False)
 pipe.run_and_wait_end()
 print("DONE, time =", pipe.ffTime(), "(ms)")
