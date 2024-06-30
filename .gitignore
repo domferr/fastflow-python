@@ -7,3 +7,4 @@ cpptests/
 examples/generators.py
 setup.py
 pyproject.toml
+old/

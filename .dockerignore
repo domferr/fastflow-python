@@ -2,3 +2,5 @@ build
 .venv
 .vscode
 __pycache__
+.git
+

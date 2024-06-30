@@ -1,116 +1,81 @@
-## Contents
-- [How to Build](https://github.com/domferr/fastflow-python#how-to-build)
-- [How to Use](https://github.com/domferr/fastflow-python#how-to-use)
+# True parallelism in pure-Python code
 
-## To do
-- [x] Bindings of **ff_pipeline** (main functions only)
-- [x] Bindings of **ff_node** (main functions only)
-- [x] Bindings of **ff_minode** (main functions only)
-- [x] Bindings of **ff_monode** (main functions only)
-- [x] Computation is parallel
-- [x] svc function can support any python object of any type (**dynamic typing**)
-- [x] Simple example with one ff_node
-- [x] Example with ff_pipeline, ff_node and ff_minode
-- [x] Example to check that any python object is not destroyed when referred by c++ code and not by python code
-- [x] Partitioning bindings code over multiple files
-- [x] If the argument passed to ff_pipeline.add_stage goes out of scope, the stage object must be kept alive
-- [ ] **Documentation**
-- [ ] Check if arrays can be used as argument and return value of svc function
-- [ ] Create setup.py and pyproject.toml to build python module instead of manually using cmake
-- [ ] Avoid C++ types in documentation
-- [ ] How to unit test?
-- [ ] Check if numpy can be used and if there are problems
+Accompanying article: [rishiraj.me/articles/2024-04/python_subinterpreter_parallelism](https://rishiraj.me/articles/2024-04/python_subinterpreter_parallelism)
 
-## How to build
+This is a proof-of-concept implementation of running "pure" Python code truly parallely in a single CPython process. This is achieved utilizing the new [per-interpreter GIL](https://peps.python.org/pep-0684/) construct from Python 3.12.
 
-### Requirements
-On Linux you’ll need to install the **python-dev** or **python3-dev** packages as well as cmake. On macOS, the included python version works out of the box, but **cmake** must still be installed.
+Here is a rough summary of what I have achieved:-
 
-Create your python virtual environment and activate it.
-```
-python3 -m venv .venv
-source .venv/bin/activate
-``` 
+1. Create a local CPython function `subinterpreter_parallelism.parallel` which allows users to call any arbitrary Python function using multiple threads, each starting up its own sub-interpreter with its own GIL.
+1. This function takes in a variable number of lists, where each of the lists would consist of ["module_name", "function_name", args].
+1. Internally, we iterate over each of these lists, and spawn a new thread with their own interpreters to run those specific requests parallely.
+1. Since we can't easily share objects between these interpreters, I've opted to take module name & function name as strings from user and pass the same as an argument to the thread. Here, for the Python function's arguments, I'm pickling the args object to a `std::string` using `pickle` module.
+1. The spawned threads then create a new interpreter with its own GIL & run the function.
+1. Once the function completes execution in the thread, it notifies the result to the Python function using a promise.
+1. The Python function then unpickles the results as the different futures get resolved, and add them to a list.
+1. This list is finally returned to the user when all the function calls have completed.
 
-### Build
-> It is a manual build since `setup.py` file is not ready yet
+## Caveats
 
-```bash
-mkdir build/
-cd build
-cmake -DCMAKE_BUILD_TYPE=Debug ../ && make && cp fastflow.cpython-311-x86_64-linux-gnu.so ../.venv/lib/python3.11/site-packages/
-```
+1. This might not work well, or at all, with various other commonly used Python libraries (e.g. Numpy) in its current state. This is because, by default, all C/C++ extension modules are initialized [without support for multiple interpreters](https://docs.python.org/3/c-api/module.html#c.Py_mod_multiple_interpreters). This holds true for all modules created using [Cythonize](https://github.com/cython/cython/blob/368bbde62565f8798e061754caf60c94107f2d8c/Cython/Compiler/ModuleNode.py#L3547) (like Numpy), as of April, 2024. This is because C extension libraries interact regularly with low-level APIs (like `PyGIL_*`) which are known to not work well with multiple sub-interpreters. Refer [caveats section from Python documentation](https://docs.python.org/3/c-api/init.html#bugs-and-caveats). Hopefully, more libraries add support for this paradigm as it gains more adoption.
+2. Performance should still be much better with pure C++ code for highly CPU bound tasks, due to the overhead associated with Python being an interpreted language.
+3. Since very little is shared between interpreters in my setup, things like logging configuration, imports etc. need to be explicitly provided in the functions being run parallely.
 
-> `cp fastflow.cpython-311-x86_64-linux-gnu.so ../.venv/lib/python3.11/site-packages/` is optional. It is a manual installation of the created python module: when importing fastflow, the python interpreter will look into the site-packages folder and will find it. Otherwise, if you don't do that, you will need to have the file `fastflow.cpython-311-x86_64-linux-gnu.so` near the `.py` source code that imports it.
+Note that this is just an experimental project done over a weekend that might be of interest to others interested in parallelism & Python evolution.
 
-## How to use
 
-1. Import fastflow
-```python
-from fastflow import ff_pipeline, ff_node, STOP, GO_ON
-```
+## Installation
+Please use Python 3.12 & above for testing this out.
+Here, the commands given are for Linux & might require tweaking on other operating systems.
 
-2. Create the first stage (a subclass of ff_node)
-```python
-class Stage1(ff_node):
-    def __init__(self):
-        ff_node.__init__(self)
-    
-    def svc_init(self):
-        self.counter = 0
-        return 0
+1. Create & activate a virtual environment 
+`python3.12 -m venv .venv && source .venv/bin/activate`
 
-    def svc(self, *args):
-        value_to_next_stage = self.counter
-        self.counter = self.counter + 1
-        if self.counter > 10:
-            return STOP
-        
-        print("Hi!")
+1. Add `benchmarking` directory from this folder is treated as a Python source directory. 
+```export PYTHONPATH=$PYTHONPATH:`pwd`/benchmarking```
 
-        return value_to_next_stage
-    
-    def svc_end(self):
-        print("first stage ended")
+1. Ensure that setuptools is available locally.
+`pip install setuptools`
+
+1. Setup Python extension locally.
+`python3 setup.py install`
+
+1. Run demo code to validate things are working fine
+`python3 demo.py`
+
+## Usage
+```py
+from subinterpreter_parallelism import parallel
+
+# Run 3 threads of pure python functions in parallel using sub-interpreters.
+result = parallel(['module1', 'func1', (arg11, arg12, arg13),)],
+                  ['module2', 'func2', (arg21, arg22)],
+                  ['module3', 'func3', tuple()])
 ```
 
-3. Create the second stage (a subclass of ff_node)
-```python
-class Stage2(ff_node):
-    def __init__(self):
-        ff_node.__init__(self)
-    
-    def svc_init(self):
-        return 0
 
-    def svc(self, *args):
-        print("Got", args, "from previous stage")
+## Statistics
+Using normal Python threads, we can't gain any performance improvement for CPU bound tasks in CPython due to GIL contention. Hence, comparing parallelism using a simple factorial function, we get the following statistics:-
 
-        return GO_ON
-    
-    def svc_end(self):
-        print("second stage ended")
-```
+| Method | Total time taken | 
+| - | - |
+Multi-processing | 15.07s
+Sub-interpreters | 11.48s |
+C++ extension code (with GIL relinquished) |  0.74s 
 
-4. Define a main function which runs the pipeline
-```python
-def main():
-    # create a pipeline and the stage
-    pipe = ff_pipeline() 
-    stage1 = Stage1()
-    stage2 = Stage2()
-    pipe.add_stage(stage1) # add the first stage
-    pipe.add_stage(stage2) # then add the second stage
+Out of the total time taken for running a functions parallely using sub-interpreters, we see the following breakdown of time taken at each step:-
+| Step | Time taken (ms) |
+| - | - |
+| Creating interpreters | 17 | 
+| Imports & pickling/unpickling | 35 |
+| Function call | 2020 |
+| Ending interpreters | 2.7 |
 
-    # blocking call: run the pipeline and wait for it to end
-    if pipe.run_and_wait_end() < 0:
-        raise("running pipeline") # throw exception if there is a failure
-    
-    # print stats
-    print("DONE, time =", pipe.ffTime(), "(ms)")
-    
-if __name__ == "__main__":
-    main()
-```
 
-> This is the example `examples/simplepipeline.py`. Can be run via `python3 examples/simplepipeline.py`
+## Takeaways
+
+1. Using sub-interpreter paralllelism, I was able to verify that the Python process is constantly hitting close to full CPU utilization across all cores (1995% CPU utilization for machine with 20 cores). Note that with regular Python threads, CPU utilization hovers around 100% as expected (i.e. almost full utilization of a single core).
+2. Significantly (>20%) better performance with subinterpreter parallelism compared to multi-processing.
+3. Due to the inherent slowness associated with a interpreted language, it's still better to implement the CPU-bound part of the functionality in C++ using Python extensions.
+4. With Python 3.13, much of this work would be redundant as interpreters would be made part of the stdlib itself. However, it's still fascinating to see how we can achieve similar results in Python 3.12.
+
