@@ -13,6 +13,7 @@
 #include <iostream>
 #include "py_ff_node.hpp"
 #include "py_ff_node_subint.hpp"
+#include "py_ff_node_process.hpp"
 
 typedef struct {
     PyObject_HEAD
@@ -134,6 +135,20 @@ PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *arg)
     return PyLong_FromLong(val);
 }
 
+PyDoc_STRVAR(py_ff_pipeline_add_stage_process_doc, "Add a stage to the pipeline that runs in another process");
+
+PyObject* py_ff_pipeline_add_stage_process(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
+    
+    ff::ff_node* node = new py_ff_node_process(arg);
+
+    int val = _self->pipeline->add_stage(node, true);
+    return PyLong_FromLong(val);
+}
+
 static PyMethodDef py_ff_pipeline_methods[] = {
     { "ffTime",           (PyCFunction) py_ff_pipeline_ffTime, 
         METH_NOARGS, py_ff_pipeline_ffTime_doc },
@@ -141,6 +156,8 @@ static PyMethodDef py_ff_pipeline_methods[] = {
         METH_NOARGS, py_ff_pipeline_run_and_wait_end_doc },
     { "add_stage",        (PyCFunction) py_ff_pipeline_add_stage, 
         METH_O, py_ff_pipeline_add_stage_doc },
+    { "add_stage_process",        (PyCFunction) py_ff_pipeline_add_stage_process, 
+        METH_O, py_ff_pipeline_add_stage_process_doc },
     {NULL, NULL} /* Sentinel */
 };
 

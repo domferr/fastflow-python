@@ -5,30 +5,7 @@
 #include <ff/ff.hpp>
 #include <iostream>
 #include "error_macros.hpp"
-
-// Load pickling/un-pickling functions.
-#define LOAD_PICKLE_UNPICKLE \
-    PyObject* pkl_mod_name = PyUnicode_FromString("pickle");            \
-    PyObject* pkl_mod = PyImport_Import(pkl_mod_name);                  \
-    PyObject* pkl_dump_func = PyObject_GetAttrString(pkl_mod, "dumps"); \
-    PyObject* pkl_load_func = PyObject_GetAttrString(pkl_mod, "loads");
-
-// Clear all pickling/un-pickling functions.
-#define UNLOAD_PICKLE_UNPICKLE Py_DECREF(pkl_mod_name); Py_DECREF(pkl_mod); Py_DECREF(pkl_dump_func); Py_DECREF(pkl_load_func);
-
-// Create a PyObject* "obj" by unpickling "pickled"
-#define UNPICKLE_PYOBJECT(obj, pickled) \
-    PyObject* pickled_bytes = PyBytes_FromString(pickled); \
-    PyObject* obj = PyObject_CallFunctionObjArgs(pkl_load_func, pickled_bytes, nullptr); \
-    Py_DECREF(pickled_bytes);
-
-// Create a std::string "str" by unpickling PyObject* "object"
-#define PICKLE_PYOBJECT(str, object) \
-    PyObject* protocol = PyLong_FromLong(0); \
-    PyObject* decoded_bytes = PyObject_CallFunctionObjArgs(pkl_dump_func, object, protocol , nullptr); \
-    std::string str = PyBytes_AsString(decoded_bytes); \
-    Py_DECREF(protocol); \
-    Py_DECREF(decoded_bytes);
+#include "pickle.hpp"
 
 class py_ff_node_subint: public ff::ff_node {
 public:
@@ -120,6 +97,7 @@ for [k, v] in glb:
         {
             // Load pickling/unpickling functions IN THE NEW INTERPRETER
             LOAD_PICKLE_UNPICKLE
+            CHECK_ERROR_THEN("load pickle and unpickle failure: ", returnValue = -1;)
 
             // recreate the global declarations and imports
             PyRun_SimpleString(env_str.c_str());

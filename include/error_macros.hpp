@@ -1,6 +1,9 @@
 #ifndef ERROR_MACROS
 #define ERROR_MACROS
 
+// workaround to suppress vscode warnings
+extern PyObject* PyErr_GetRaisedException(void);
+
 #define PRINT_ERROR(descr) \
 { \  
     PyObject* err = PyErr_GetRaisedException(); \
