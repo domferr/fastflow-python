@@ -221,7 +221,9 @@ public:
         }
         
         // get globals to use with PyRun_String
-        PyObject* globals = PyModule_GetDict(PyImport_AddModule("__main__"));
+        PyObject* main_module = PyImport_ImportModule("__main__");
+        CHECK_ERROR_THEN("PyImport_ImportModule __main__ failure: ", return -1;)
+        PyObject* globals = PyModule_GetDict(main_module);
         CHECK_ERROR_THEN("PyModule_GetDict failure: ", return -1;)
         
         // run code to compute global declarations, imports, etc...
@@ -249,7 +251,7 @@ for [k, v] in glb:
         
         // Cleanup of objects created
         Py_DECREF(result);
-        Py_DECREF(globals);
+        //Py_DECREF(globals);
         UNLOAD_PICKLE_UNPICKLE
 
         int returnValue = 0;
@@ -329,7 +331,7 @@ for [k, v] in glb:
         std::string* serialized_data = arg == NULL ? &empty_tuple_str:reinterpret_cast<std::string*>(arg);
         
         int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = *serialized_data, .f_name = "svc" });
-        if (arg != NULL) free(serialized_data);
+        //todo if (arg != NULL) free(serialized_data);
         if (err < 0) {
             perror("svc send serialized data");
             return NULL;

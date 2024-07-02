@@ -35,7 +35,9 @@ public:
         PICKLE_PYOBJECT(node_str, node);
         CHECK_ERROR_THEN("pickle node failure: ", return -1;)
         
-        PyObject* globals = PyModule_GetDict(PyImport_AddModule("__main__"));
+        PyObject* main_module = PyImport_ImportModule("__main__");
+        CHECK_ERROR_THEN("PyImport_ImportModule __main__ failure: ", return -1;)
+        PyObject* globals = PyModule_GetDict(main_module);
         CHECK_ERROR_THEN("PyModule_GetDict failure: ", return -1;)
         
         // run code to compute global declarations, imports, etc...
@@ -63,7 +65,7 @@ for [k, v] in glb:
         
         // Cleanup of objects created
         Py_DECREF(result);
-        Py_DECREF(globals);
+        //todo Py_DECREF(globals);
         UNLOAD_PICKLE_UNPICKLE
 
         // Create a new sub-interpreter with its own GIL
@@ -131,7 +133,7 @@ for [k, v] in glb:
         
         PyObject* py_args = arg == NULL ? PyTuple_New(0):pickl->unpickle(*serialized_data);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
-        if (serialized_data) free(serialized_data);
+        //todo if (serialized_data) free(serialized_data);
         PyObject* py_result = PyObject_CallFunctionObjArgs(svc_func, py_args, NULL);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
 
