@@ -285,7 +285,6 @@ for [k, v] in glb:
             } else { // parent
                 PyOS_AfterFork_Parent();
 
-                
                 // Release the main GIL
                 PyEval_SaveThread();
                 close(mainToChildFD[0]); // Close read end of mainToChildFD

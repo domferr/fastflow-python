@@ -12,7 +12,7 @@ public:
     /* Inherit the constructors */
     using ff_node::ff_node;
 
-    py_ff_node_subint(PyObject* node): node(node), svc_func(nullptr) {
+    py_ff_node_subint(PyObject* node): node(node), svc_func(nullptr), pickl(nullptr) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         svc_func = PyObject_GetAttrString(node, "svc");
@@ -94,25 +94,19 @@ for [k, v] in glb:
         PyThreadState_Clear(cached_tstate);
         PyThreadState_Delete(cached_tstate);
         
-        {
-            // Load pickling/unpickling functions IN THE NEW INTERPRETER
-            LOAD_PICKLE_UNPICKLE
-            CHECK_ERROR_THEN("load pickle and unpickle failure: ", returnValue = -1;)
+        // Load pickling/unpickling functions IN THE NEW INTERPRETER
+        pickl = new pickling();
+        CHECK_ERROR_THEN("load pickle and unpickle failure: ", returnValue = -1;)
 
-            // recreate the global declarations and imports
-            PyRun_SimpleString(env_str.c_str());
+        // recreate the global declarations and imports
+        PyRun_SimpleString(env_str.c_str());
 
-            // deserialize Python node
-            UNPICKLE_PYOBJECT(new_node, node_str.c_str());
-            CHECK_ERROR_THEN("unpickle node failure: ", returnValue = -1;)
+        // deserialize Python node
+        // overwrite the old node (from the main interpreter) with the new one (in this subinterpreter)
+        node = pickl->unpickle(node_str);
+        CHECK_ERROR_THEN("unpickle node failure: ", returnValue = -1;)
 
-            // overwrite the old node (from the main interpreter) with the new one (in this subinterpreter)
-            node = new_node;
-            svc_func = PyObject_GetAttrString(node, "svc");
-
-            // Cleanup of objects created
-            UNLOAD_PICKLE_UNPICKLE
-        }
+        svc_func = PyObject_GetAttrString(node, "svc");
 
         if (PyObject_HasAttrString(node, "svc_init")) {
             PyObject* svc_init_func = PyObject_GetAttrString(node, "svc_init");
@@ -132,8 +126,12 @@ for [k, v] in glb:
         return returnValue;
     }
 
-    void * svc(void *arg) override {
-        PyObject* py_args = reinterpret_cast<PyObject*>(arg);
+    void * svc(void *arg) override {        
+        std::string* serialized_data = arg == NULL ? NULL:reinterpret_cast<std::string*>(arg);
+        
+        PyObject* py_args = arg == NULL ? PyTuple_New(0):pickl->unpickle(*serialized_data);
+        CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
+        if (serialized_data) free(serialized_data);
         PyObject* py_result = PyObject_CallFunctionObjArgs(svc_func, py_args, NULL);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
 
@@ -141,7 +139,10 @@ for [k, v] in glb:
             Py_DECREF(py_result);
             return NULL;
         }
-        return (void*) py_result;
+
+        auto serialized_result = new std::string(pickl->pickle(py_args));
+        CHECK_ERROR_THEN("pickle result failure: ", return NULL;)
+        return (void*) serialized_result;
     }
 
     void cleanup() {
@@ -150,6 +151,8 @@ for [k, v] in glb:
         Py_DECREF(node);
         svc_func = nullptr;
         node = nullptr;
+        pickl->~pickling();
+        pickl = nullptr;
         // End the interpreter
         Py_EndInterpreter(tstate);
         tstate = nullptr;
@@ -172,6 +175,7 @@ private:
     PyThreadState *tstate;
     PyObject* node;
     PyObject* svc_func;
+    pickling* pickl;
 };
 
 #endif // PY_FF_NODE_SUBINT

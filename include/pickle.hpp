@@ -28,4 +28,41 @@
     Py_DECREF(protocol); \
     Py_DECREF(decoded_bytes);
 
+class pickling {
+public:
+    pickling() {
+        PyObject* pkl_mod_name = PyUnicode_FromString("pickle");
+        PyObject* pkl_mod = PyImport_Import(pkl_mod_name);
+        pkl_dump_func = PyObject_GetAttrString(pkl_mod, "dumps");
+        pkl_load_func = PyObject_GetAttrString(pkl_mod, "loads");
+        Py_DECREF(pkl_mod_name); 
+        Py_DECREF(pkl_mod);
+    }
+
+    ~pickling() {
+        Py_DECREF(pkl_dump_func);
+        Py_DECREF(pkl_load_func);
+    }
+
+    std::string pickle(PyObject* object, int protocol = 0) {
+        PyObject* protocol_obj = PyLong_FromLong(protocol);
+        PyObject* decoded_bytes = PyObject_CallFunctionObjArgs(pkl_dump_func, object, protocol_obj , nullptr);
+        std::string str = PyBytes_AsString(decoded_bytes);
+        Py_DECREF(protocol_obj);
+        Py_DECREF(decoded_bytes);
+        return str;
+    }
+
+    PyObject* unpickle(std::string &str) {
+        PyObject* pickled_bytes = PyBytes_FromString(str.c_str());
+        PyObject* obj = PyObject_CallFunctionObjArgs(pkl_load_func, pickled_bytes, nullptr);
+        Py_DECREF(pickled_bytes);
+        return obj;
+    }
+
+private:
+    PyObject* pkl_dump_func;
+    PyObject* pkl_load_func;
+};
+
 #endif //PICKLE_HPP
