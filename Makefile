@@ -1,6 +1,6 @@
 docker:
 	docker build -t pythontest .
-	docker run --rm -it --name pythontest pythontest
+	docker run --rm -p 8888:8888 -it --name pythontest pythontest
 
 copy:
 	docker cp ./include pythontest:./
