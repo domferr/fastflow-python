@@ -107,3 +107,24 @@ pipe.run_and_wait_end()
 # print how many milliseconds the pipeline took
 print(f"farm done in {farm.pipeline()}ms")
 ```
+
+## Open questions
+- How to handle multi input/output nodes? The function ff_send_out(...) is not a member of the node class. A possible solution:
+```
+class worker():
+    def svc(self, *args): # args are sent by the emitter
+        # perform some work
+        data = busy_work(args)
+        fastflow.ff_send_out(data, 1) # <----- call ff_send_out
+        return # the underline ff_node should continue instead of stopping
+
+    def svc_end(self):
+        do_some_work() # do some work when the worker ends
+```
+- Who frees the serialized objects in a farm? A solution "who deserializes then frees" is not suitable since N > 1 workers share the same serialized data of an object
+- How to handle renaming of imported modules when recreating the environment in processes/subinterpreters? For example `import numpy as np` would cause the statement `import np` when recreating the environment.
+- Can we use shared memory instead of pipes?
+- If we use pipes, we need to handle the case of overflowing the pipe (it can be solved by calling the usual `readn` instead of `read` system call).
+- Why calling `svc` inside subinterpreters is slower than calling it inside processes (including the time needed to send through pipe + recv ack + recv response + send ack)...?
+- Memory leaks...
+- Workers are added to the farm at the same time. The environment is serialized for each worker, but it may be just serialized once and shared accross all the workers. However it is not easy: if done during svc_init, how can we share the env accross all the workers and how we choose which worker does the serialization?
