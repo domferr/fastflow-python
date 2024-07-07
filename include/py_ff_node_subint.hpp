@@ -137,10 +137,10 @@ for [k, v] in glb:
         auto svc_start_time = std::chrono::system_clock::now();  
         std::string* serialized_data = arg == NULL ? NULL:reinterpret_cast<std::string*>(arg);
         
-        PyObject* py_args = arg == NULL ? PyTuple_New(0):pickl->unpickle(*serialized_data);
+        PyObject* py_args = arg == NULL ? nullptr:pickl->unpickle(*serialized_data);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
         //todo if (serialized_data) free(serialized_data);
-        PyObject* py_result = PyObject_CallObject(svc_func, py_args);//PyObject_CallFunctionObjArgs(svc_func, py_args, NULL);
+        PyObject* py_result = PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
 
         if (py_result == Py_None) {
@@ -148,11 +148,12 @@ for [k, v] in glb:
             return NULL;
         }
 
-        auto serialized_result = new std::string(pickl->pickle(py_args));
+        auto serialized_result = new std::string(pickl->pickle(py_result, 0));
         CHECK_ERROR_THEN("pickle result failure: ", return NULL;)
-
+        
         auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
         std::cerr << "svc time " << svc_time_ms << "ms" << std::endl;
+        
         return (void*) serialized_result;
     }
 
