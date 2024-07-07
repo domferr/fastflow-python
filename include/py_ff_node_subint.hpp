@@ -4,6 +4,7 @@
 #include <Python.h>
 #include <ff/ff.hpp>
 #include <iostream>
+#include <chrono>
 #include "error_macros.hpp"
 #include "pickle.hpp"
 
@@ -20,6 +21,7 @@ public:
     }
 
     int svc_init() override {
+        auto svc_init_start_time = std::chrono::system_clock::now();
         // associate a new thread state with ff_node's thread
         PyThreadState* cached_tstate = tstate;
         tstate = PyThreadState_New(cached_tstate->interp);
@@ -125,16 +127,20 @@ for [k, v] in glb:
         }
 
         if (returnValue != 0) cleanup();
+
+        auto svc_init_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_init_start_time).count();
+        std::cerr << "svc_init time " << svc_init_time_ms << "ms" << std::endl;
         return returnValue;
     }
 
-    void * svc(void *arg) override {        
+    void * svc(void *arg) override {      
+        auto svc_start_time = std::chrono::system_clock::now();  
         std::string* serialized_data = arg == NULL ? NULL:reinterpret_cast<std::string*>(arg);
         
         PyObject* py_args = arg == NULL ? PyTuple_New(0):pickl->unpickle(*serialized_data);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
         //todo if (serialized_data) free(serialized_data);
-        PyObject* py_result = PyObject_CallFunctionObjArgs(svc_func, py_args, NULL);
+        PyObject* py_result = PyObject_CallObject(svc_func, py_args);//PyObject_CallFunctionObjArgs(svc_func, py_args, NULL);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
 
         if (py_result == Py_None) {
@@ -144,6 +150,9 @@ for [k, v] in glb:
 
         auto serialized_result = new std::string(pickl->pickle(py_args));
         CHECK_ERROR_THEN("pickle result failure: ", return NULL;)
+
+        auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
+        std::cerr << "svc time " << svc_time_ms << "ms" << std::endl;
         return (void*) serialized_result;
     }
 
@@ -161,6 +170,8 @@ for [k, v] in glb:
     }
 
     void svc_end() override {
+        auto svc_end_start_time = std::chrono::system_clock::now();
+        
         if (PyObject_HasAttrString(node, "svc_end") == 1) {
             PyObject* svc_end_func = PyObject_GetAttrString(node, "svc_end");
             CHECK_ERROR("get svc_end function failure: ")
@@ -171,6 +182,9 @@ for [k, v] in glb:
             }
         }
         cleanup();
+
+        auto svc_end_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_end_start_time).count();
+        std::cerr << "svc_end time " << svc_end_time_ms << "ms" << std::endl;
     }
 
 private:

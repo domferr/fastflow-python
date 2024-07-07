@@ -191,6 +191,7 @@ public:
     }
     
     int svc_init() override {
+        auto svc_init_start_time = std::chrono::system_clock::now();
         // associate a new thread state with ff_node's thread
         PyThreadState* cached_tstate = tstate;
         tstate = PyThreadState_New(cached_tstate->interp);
@@ -324,10 +325,14 @@ for [k, v] in glb:
             PyEval_RestoreThread(tstate);
             cleanup();
         }
+
+        auto svc_init_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_init_start_time).count();
+        std::cerr << "svc_init time " << svc_init_time_ms << "ms" << std::endl;
         return returnValue;
     }
 
     void * svc(void *arg) override {
+        auto svc_start_time = std::chrono::system_clock::now(); 
         std::string* serialized_data = arg == NULL ? &empty_tuple_str:reinterpret_cast<std::string*>(arg);
         
         int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = *serialized_data, .f_name = "svc" });
@@ -341,6 +346,8 @@ for [k, v] in glb:
         err = receiveMessage(read_fd, send_fd, response);
         if (err <= 0) handleError("read result of remote svc call", );
         else {
+            auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
+            std::cerr << "svc time " << svc_time_ms << "ms" << std::endl;
             if (response.data == none_str) return NULL;
 
             return new std::string(response.data);
@@ -365,6 +372,8 @@ for [k, v] in glb:
     }
 
     void svc_end() override {
+        auto svc_end_start_time = std::chrono::system_clock::now();
+
         if (send_fd > 0 && read_fd > 0) { // they are -1 if an error occurred during svc_init or svc
             int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = empty_tuple_str, .f_name = "svc_end" });
             if (err <= 0) perror("remote call of svc_end");
@@ -375,10 +384,19 @@ for [k, v] in glb:
             }
         }
 
+        // close the pipes, so the process can stop meanwhile we acquire the GIL and cleanup everything
+        if (send_fd > 0) close(send_fd);
+        send_fd = -1;
+        if (read_fd > 0) close(read_fd);
+        send_fd = -1;
+
         // Acquire the main GIL
         PyEval_RestoreThread(tstate);
         cleanup();
-        waitpid(pid, nullptr, 0);
+        //waitpid(pid, nullptr, 0);
+
+        auto svc_end_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_end_start_time).count();
+        std::cerr << "svc_end time " << svc_end_time_ms << "ms" << std::endl;
     }
 
 private:

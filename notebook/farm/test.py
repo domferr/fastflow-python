@@ -1,4 +1,5 @@
 from fastflow_subint_module import FFFarm
+import sys
 
 def busy_work():
     i = 0
@@ -95,7 +96,7 @@ def build_farm(nworkers = 1, use_processes = True, use_subinterpreters = False):
     return farm
 
 def run_farm(nworkers, use_processes = False, use_subinterpreters = False):
-    print(f"run farm of {nworkers} workers")
+    print(f"run farm of {nworkers} workers", file=sys.stderr)
     farm = build_farm(nworkers, use_processes, use_subinterpreters)
     farm.run_and_wait_end()
     return farm.ffTime()

@@ -1,4 +1,5 @@
 from fastflow_subint_module import FFPipeline
+import sys
 
 def busy_work():
     i = 0
@@ -89,7 +90,7 @@ def build_pipe(nstages = 2, use_processes = True, use_subinterpreters = False):
     return pipe
 
 def run_pipe(nstages, use_processes = False, use_subinterpreters = False):
-    print(f"run pipe of {nstages} stages")
+    print(f"run pipe of {nstages} stages", file=sys.stderr)
     pipe = build_pipe(nstages, use_processes, use_subinterpreters)
     pipe.run_and_wait_end()
     return pipe.ffTime()
@@ -111,3 +112,12 @@ for i in range(2, 6): # from 2 to 5
     subinterpreters[1].append(res) # y
 
 print("subinterpreters =", subinterpreters)
+
+"""standard = [[],[]]
+for i in range(2, 6): # from 2 to 5
+    res = run_pipe(i, use_processes = False, use_subinterpreters = False)
+    print(f"done in {res}ms")
+    standard[0].append(i) # x
+    standard[1].append(res) # y
+
+print("standard =", standard)"""
