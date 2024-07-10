@@ -1,5 +1,7 @@
-from fastflow_subint_module import FFFarm
+from fastflow_module import FFFarm
 import sys
+
+N_TASKS = 6
 
 def busy_work():
     i = 0
@@ -17,11 +19,9 @@ class emitter():
 
     def svc(self, *args):
         print(f'[{self.id} | emitter] svc, counter = {self.counter}, {args}')
-        if self.counter == 6:
+        if self.counter == N_TASKS:
             return None
         self.counter += 1
-
-        busy_work()
 
         return self.counter
 

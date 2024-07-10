@@ -1,13 +1,15 @@
-docker:
-	docker build -t pythontest .
-	docker run --rm -p 8888:8888 -it --name pythontest pythontest
+clean:
+	rm -rf build
 
-copy:
-	docker cp ./include pythontest:./
-	docker cp bindings.cpp pythontest:./
-	docker cp parallel.py pythontest:./
-	docker cp ./obj.py pythontest:./
-	docker cp ./test_ff_send_out.py pythontest:./
+config:
+	pip install setuptools
 
-build:
-	cmake -DCMAKE_BUILD_TYPE=Debug ../ && make -j 2 && cp fastflow.cpython-312-x86_64-linux-gnu.so ..
+repara-copy:
+	rsync -av -e ssh --exclude 'fastflow' --exclude '.git' --exclude '.venv' ./ dferraro@repara.unipi.it:/home/dferraro/fastflow-python
+
+titanic-copy:
+	rsync -av -e ssh --exclude 'fastflow' --exclude '.git' --exclude '.venv' ./ dferraro@titanic.unipi.it:/home/dferraro/fastflow-python
+
+build: clean
+	python3.12 setup.py install
+

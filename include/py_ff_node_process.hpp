@@ -8,8 +8,7 @@
 #include "error_macros.hpp"
 #include "pickle.hpp"
 
-
-//#define DEBUG 1
+#define DEBUG 1
 
 #ifdef DEBUG
 #    define LOG(msg) std::cerr << msg << std::endl
@@ -103,40 +102,31 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
 }
 
-void process_body(int read_fd, int send_fd) {    
-    // receive serialized environment
+void process_body(int read_fd, int send_fd) {
     Message message;
-    int err = receiveMessage(read_fd, send_fd, message);
-    if (err <= 0) handleError("[child] read env string", close(send_fd); close(read_fd); exit(0));
-    LOG("[child] got env string");
     
     // Load pickling/unpickling functions
-    LOAD_PICKLE_UNPICKLE
+    pickling pickl;
 
     auto cleanup_exit = [&](){
         LOG("[child] cleanup");
         // Cleanup of objects created
-        UNLOAD_PICKLE_UNPICKLE
         close(send_fd);
         close(read_fd);
+        pickl.~pickling();
         Py_Finalize();
         exit(0);
     };
 
     CHECK_ERROR_THEN("[child] load pickle/unpickle failure: ", cleanup_exit();)
-    
-    // recreate the global declarations and imports
-    PyRun_SimpleString(message.data.c_str());
-    CHECK_ERROR_THEN("[child] create env failure: ", cleanup_exit();)
-    LOG("[child] env is ready");
 
     // receive serialized node
-    err = receiveMessage(read_fd, send_fd, message);
+    int err = receiveMessage(read_fd, send_fd, message);
     if (err <= 0) handleError("[child] read serialized node", cleanup_exit());
     LOG("[child] read serialized node");
 
     // deserialize Python node
-    UNPICKLE_PYOBJECT(node, message.data.c_str());
+    auto node = pickl.unpickle(message.data);
     CHECK_ERROR_THEN("[child] unpickle node failure: ", cleanup_exit();)
     LOG("[child] deserialized node");
     
@@ -146,7 +136,7 @@ void process_body(int read_fd, int send_fd) {
 
         if (err > 0) {
             // deserialize data
-            UNPICKLE_PYOBJECT(py_args_tuple, message.data.c_str());
+            auto py_args_tuple = pickl.unpickle(message.data);
             CHECK_ERROR_THEN("[child] deserialize data failure: ", cleanup_exit();)
 
             // call function
@@ -159,7 +149,7 @@ void process_body(int read_fd, int send_fd) {
                 CHECK_ERROR_THEN("[child] call function failure: ", cleanup_exit();)
 
                 // serialize response
-                PICKLE_PYOBJECT(result_str, py_result);
+                auto result_str = pickl.pickle(py_result, 0);
                 CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
 
                 // send response
@@ -200,61 +190,22 @@ public:
         PyEval_RestoreThread(tstate);
 
         // Load pickling/unpickling functions
-        LOAD_PICKLE_UNPICKLE
+        pickling pickl;
         CHECK_ERROR_THEN("load pickle and unpickle failure: ", return -1;)
 
         // serialize Python node to string
-        PICKLE_PYOBJECT(node_str, node);
+        auto node_str = pickl.pickle(node, 0);
         CHECK_ERROR_THEN("pickle node failure: ", return -1;)
 
-        {
-            PyObject* empty_tuple = PyTuple_New(0);
-            PICKLE_PYOBJECT(empty_tuple_result, empty_tuple);
-            CHECK_ERROR_THEN("pickle empty tuple failure: ", return -1;)
-            Py_DECREF(empty_tuple);
-            empty_tuple_str = empty_tuple_result;
-        }
+        PyObject* empty_tuple = PyTuple_New(0);
+        empty_tuple_str = std::string(pickl.pickle(empty_tuple));
+        CHECK_ERROR_THEN("pickle empty tuple failure: ", return -1;)
+        Py_DECREF(empty_tuple);
 
-        {
-            PICKLE_PYOBJECT(none_result, Py_None);
-            CHECK_ERROR_THEN("pickle None failure: ", return -1;)
-            none_str = none_result;
-        }
-        
-        // get globals to use with PyRun_String
-        PyObject* main_module = PyImport_ImportModule("__main__");
-        CHECK_ERROR_THEN("PyImport_ImportModule __main__ failure: ", return -1;)
-        PyObject* globals = PyModule_GetDict(main_module);
-        CHECK_ERROR_THEN("PyModule_GetDict failure: ", return -1;)
-        
-        // run code to compute global declarations, imports, etc...
-        PyRun_String(R"PY(
-glb = [[k,v] for k,v in globals().items() if not (k.startswith('__') and k.endswith('__'))]
+        none_str = std::string(pickl.pickle(Py_None, 0));
+        CHECK_ERROR_THEN("pickle None failure: ", return -1;)
 
-import inspect
-res = ""
-for [k, v] in glb:
-    try:
-        if inspect.ismodule(v):
-            res += f"import {k}"
-        elif inspect.isclass(v) or inspect.isfunction(v):
-            res += inspect.getsource(v)
-        #else:
-        #    res += f"{k} = {v}"
-        res += "\n"
-    except:
-        pass
-        )PY", Py_file_input, globals, NULL);
-        CHECK_ERROR_THEN("PyRun_String failure: ", return -1;)
-
-        PyObject* result = PyDict_GetItemString(globals, "res");
-        std::string env_str = std::string(PyUnicode_AsUTF8(PyObject_Str(result)));
-        
-        // Cleanup of objects created
-        Py_DECREF(result);
-        //Py_DECREF(globals);
-        UNLOAD_PICKLE_UNPICKLE
-
+        pickl.~pickling();
         int returnValue = 0;
 
         int mainToChildFD[2]; // data to be sent from main process to child process
@@ -279,6 +230,7 @@ for [k, v] in glb:
                 returnValue = -1;
             } else if (pid == 0) { // child
                 PyOS_AfterFork_Child();
+
                 close(mainToChildFD[1]); // Close write end of mainToChildFD
                 close(childToMainFD[0]); // Close read end of childToMainFD
 
@@ -296,13 +248,8 @@ for [k, v] in glb:
                 send_fd = mainToChildFD[1];
                 read_fd = childToMainFD[0];
 
-                int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = env_str, .f_name = "" });
-                if (err <= 0) handleError("send env string", returnValue = -1);
-
-                if (err > 0) {
-                    err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = node_str, .f_name = "" });
-                    if (err <= 0) handleError("send serialized node", returnValue = -1);
-                }
+                int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = node_str, .f_name = "" });
+                if (err <= 0) handleError("send serialized node", returnValue = -1);
 
                 if (err > 0) {
                     err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = empty_tuple_str, .f_name = "svc_init" });
@@ -337,7 +284,7 @@ for [k, v] in glb:
         
         int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = *serialized_data, .f_name = "svc" });
         //todo if (arg != NULL) free(serialized_data);
-        if (err < 0) {
+        if (err <= 0) {
             perror("svc send serialized data");
             return NULL;
         }
@@ -389,6 +336,8 @@ for [k, v] in glb:
         send_fd = -1;
         if (read_fd > 0) close(read_fd);
         send_fd = -1;
+
+        waitpid(pid, nullptr, 0);
 
         // Acquire the main GIL
         PyEval_RestoreThread(tstate);

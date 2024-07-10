@@ -1,5 +1,5 @@
 import time
-from fastflow_subint_module import FFFarm
+from fastflow_module import FFFarm
 import sys
 
 class DummyData:
