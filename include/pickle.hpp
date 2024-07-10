@@ -40,8 +40,8 @@ public:
     }
 
     ~pickling() {
-        Py_DECREF(pkl_dump_func);
-        Py_DECREF(pkl_load_func);
+        //Py_DECREF(pkl_dump_func);
+        //Py_DECREF(pkl_load_func);
     }
 
     std::string pickle(PyObject* object, int protocol = 5) {

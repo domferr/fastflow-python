@@ -1,4 +1,4 @@
-from fastflow_subint_module import FFPipeline
+from fastflow_module import FFPipeline
 import sys
 
 def busy_work():

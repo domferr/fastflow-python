@@ -10,7 +10,7 @@
 // A struct contains the definition of a module
 PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    "fastflow_subint_module", // Module name
+    "fastflow_module", // Module name
     "This is FastFlow's docstring",
     -1,   // Optional size of the module state memory
     NULL, // Optional module methods
@@ -21,7 +21,7 @@ PyModuleDef moduledef = {
 };
 
 PyMODINIT_FUNC
-PyInit_fastflow_subint_module(void) {
+PyInit_fastflow_module(void) {
     PyObject* module = PyModule_Create(&moduledef);
     
     // add FFPipeline

@@ -1,5 +1,7 @@
-from fastflow_subint_module import FFFarm
+from fastflow_module import FFFarm
 import sys
+
+N_TASKS = 6
 
 class DummyData:
     def __init__(self, val):
@@ -33,11 +35,9 @@ class emitter():
 
     def svc(self, *args):
         print(f'[{self.id} | emitter] svc, counter = {self.counter}, {args}')
-        if self.counter == 6:
+        if self.counter == N_TASKS:
             return None
         self.counter += 1
-
-        busy_work()
 
         return DummyData(self.counter)
 
@@ -72,8 +72,6 @@ class collector():
     
     def svc(self, *args):
         print(f'[{self.id} | collector] svc, {args}')
-
-        busy_work()
 
         return 0
 
@@ -116,6 +114,8 @@ def run_farm(nworkers, use_processes = False, use_subinterpreters = False):
     farm = build_farm(nworkers, use_processes, use_subinterpreters)
     farm.run_and_wait_end()
     return farm.ffTime()
+
+
 
 processes = [[],[]]
 for i in range(2, 6): # from 2 to 5
