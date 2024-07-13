@@ -1,1 +1,0 @@
-docker cp . pythontest:/app/

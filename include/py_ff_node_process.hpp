@@ -294,7 +294,7 @@ public:
         if (err <= 0) handleError("read result of remote svc call", );
         else {
             auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
-            std::cerr << "svc time " << svc_time_ms << "ms" << std::endl;
+            std::cerr << "serialized size = " << serialized_data->size() << ", svc time " << svc_time_ms << "ms" << std::endl;
             if (response.data == none_str) return NULL;
 
             return new std::string(response.data);

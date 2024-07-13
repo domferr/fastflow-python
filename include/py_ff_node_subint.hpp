@@ -152,7 +152,7 @@ for [k, v] in glb:
         CHECK_ERROR_THEN("pickle result failure: ", return NULL;)
         
         auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
-        std::cerr << "svc time " << svc_time_ms << "ms" << std::endl;
+        std::cerr << "serialized size = " << serialized_result->size() << ", svc time " << svc_time_ms << "ms" << std::endl;
         
         return (void*) serialized_result;
     }

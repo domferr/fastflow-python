@@ -1,7 +1,7 @@
 from fastflow_module import FFFarm
 import argparse
 import sys
-import math
+import busy_wait
 
 class DummyData:
     def __init__(self, val):
@@ -18,13 +18,6 @@ class DummyData:
         return f"{self.astr}, {self.num}, {self.adict}, {self.atup}, {self.aset}"
     
     __repr__ = __str__
-
-def busy_work():
-    thousands = 245000 # 1000ms repara
-    hundreds = 56950 # 100ms repara
-    tens = 15370 # 10ms repara
-    
-    math.factorial(thousands)
 
 class emitter():
     def __init__(self, n_tasks):
@@ -46,7 +39,8 @@ class emitter():
         print(f'[emitter] svc_end was called')
 
 class worker():
-    def __init__(self, id):
+    def __init__(self, ms, id):
+        self.ms = ms
         self.id = id
 
     def svc_init(self):
@@ -56,7 +50,7 @@ class worker():
     def svc(self, *args):
         print(f'[{self.id} | worker] svc, {args}')
 
-        busy_work()
+        busy_wait.wait(self.ms)
 
         return args
 
@@ -76,7 +70,7 @@ class collector():
     def svc_end(self):
         print(f'[collector] svc_end was called')
 
-def build_farm(n_tasks, nworkers = 1, use_processes = True, use_subinterpreters = False):
+def build_farm(n_tasks, task_ms, nworkers = 1, use_processes = True, use_subinterpreters = False):
     farm = FFFarm(use_subinterpreters)
 
     # emitter
@@ -89,7 +83,7 @@ def build_farm(n_tasks, nworkers = 1, use_processes = True, use_subinterpreters 
     # build workers list
     w_lis = []
     for i in range(nworkers):
-        w = worker(f"{i+1}")
+        w = worker(task_ms, f"{i+1}")
         w_lis.append(w)
     
     # add workers
@@ -107,9 +101,9 @@ def build_farm(n_tasks, nworkers = 1, use_processes = True, use_subinterpreters 
 
     return farm
 
-def run_farm(n_tasks, nworkers, use_processes = False, use_subinterpreters = False):
+def run_farm(n_tasks, task_ms, nworkers, use_processes = False, use_subinterpreters = False):
     print(f"run farm of {nworkers} workers and {n_tasks} tasks", file=sys.stderr)
-    farm = build_farm(n_tasks, nworkers, use_processes, use_subinterpreters)
+    farm = build_farm(n_tasks, task_ms, nworkers, use_processes, use_subinterpreters)
     farm.run_and_wait_end()
     return farm.ffTime()
 
@@ -117,6 +111,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some tasks.')
     parser.add_argument('num_tasks', type=int, help='Number of tasks to process')
     parser.add_argument('num_workers', type=int, help='Number of workers of the farm')
+    parser.add_argument('task_ms', type=int, help='Duration in milliseconds of one task')
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('-proc', action='store_true', help='Use multiprocessing to process tasks')
     group.add_argument('-sub', action='store_true', help='Use subinterpreters to process tasks')
@@ -126,7 +121,7 @@ if __name__ == "__main__":
 
     if args.proc:
         processes = [[],[]]
-        res = run_farm(args.num_tasks, args.num_workers, use_processes = True, use_subinterpreters = False)
+        res = run_farm(args.num_tasks, args.task_ms, args.num_workers, use_processes = True, use_subinterpreters = False)
         print(f"done in {res}ms")
         processes[0].append(args.num_workers) # x
         processes[1].append(res) # y
@@ -134,7 +129,7 @@ if __name__ == "__main__":
         print("processes =", processes)
     elif args.sub:
         subinterpreters = [[],[]]
-        res = run_farm(args.num_tasks, args.num_workers, use_processes = False, use_subinterpreters = True)
+        res = run_farm(args.num_tasks, args.task_ms, args.num_workers, use_processes = False, use_subinterpreters = True)
         print(f"done in {res}ms")
         subinterpreters[0].append(args.num_workers) # x
         subinterpreters[1].append(res) # y
@@ -142,7 +137,7 @@ if __name__ == "__main__":
         print("subinterpreters =", subinterpreters)
     else:
         standard = [[],[]]
-        res = run_farm(args.num_tasks, args.num_workers, use_processes = False, use_subinterpreters = False)
+        res = run_farm(args.num_tasks, args.task_ms, args.num_workers, use_processes = False, use_subinterpreters = False)
         print(f"done in {res}ms")
         standard[0].append(args.num_workers) # x
         standard[1].append(res) # y
