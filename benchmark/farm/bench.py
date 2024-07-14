@@ -4,7 +4,7 @@ import sys
 import busy_wait
 
 """class DummyData:
-    def __init__(self, val):
+    def __init__(self, size, val):
         self.astr = f"a string {val}"
         self.num = 1704 + val
         self.adict = {
@@ -20,27 +20,18 @@ import busy_wait
     __repr__ = __str__"""
 
 class DummyData:
-    def __init__(self, size, val):
-        self.arrstr = []
-        size = size - 150 # count the (approx) size of the class
-        while size > 0:
-            thestr = f"This is a string with the number {val}"
-            strlen = len(thestr) + 5
-            if strlen > size:
-                thestr = thestr[0:size]
+    def __init__(self, data):
+        self.data = [data]
 
-            self.arrstr.append(thestr)
-            size = size - strlen
-    
     def __str__(self):
-        return f"{self.arrstr}"
+        return f"{self.data}"
     
     __repr__ = __str__
 
 class emitter():
-    def __init__(self, task_bytes, n_tasks):
+    def __init__(self, data_sample, n_tasks):
         self.n_tasks = n_tasks
-        self.task_bytes = task_bytes
+        self.data_sample = data_sample
 
     def svc_init(self):
         print(f'[emitter] svc_init was called')
@@ -52,7 +43,7 @@ class emitter():
             return None
         self.n_tasks -= 1
 
-        return DummyData(self.task_bytes, self.n_tasks)
+        return DummyData(self.data_sample)
 
     def svc_end(self):
         print(f'[emitter] svc_end was called')
@@ -68,7 +59,7 @@ class worker():
 
     def svc(self, *args):
         print(f'[{self.id} | worker] svc')
-
+        
         busy_wait.wait(self.ms)
 
         return args
@@ -89,11 +80,11 @@ class collector():
     def svc_end(self):
         print(f'[collector] svc_end was called')
 
-def build_farm(n_tasks, task_ms, nworkers, task_bytes, use_processes = True, use_subinterpreters = False):
+def build_farm(n_tasks, task_ms, nworkers, data_sample, use_processes = True, use_subinterpreters = False):
     farm = FFFarm(use_subinterpreters)
 
     # emitter
-    em = emitter(task_bytes, n_tasks)
+    em = emitter(data_sample, n_tasks)
     if use_processes:
         farm.add_emitter_process(em)
     else:
@@ -120,11 +111,16 @@ def build_farm(n_tasks, task_ms, nworkers, task_bytes, use_processes = True, use
 
     return farm
 
-def run_farm(n_tasks, task_ms, nworkers, task_bytes, use_processes = False, use_subinterpreters = False):
+def run_farm(n_tasks, task_ms, nworkers, data_sample, use_processes = False, use_subinterpreters = False):
     print(f"run farm of {nworkers} workers and {n_tasks} tasks", file=sys.stderr)
-    farm = build_farm(n_tasks, task_ms, nworkers, task_bytes, use_processes, use_subinterpreters)
+    farm = build_farm(n_tasks, task_ms, nworkers, data_sample, use_processes, use_subinterpreters)
     farm.run_and_wait_end()
     return farm.ffTime()
+
+def get_data_sample(task_bytes):
+    from string import ascii_letters
+    result = ascii_letters * int(task_bytes / len(ascii_letters))
+    return result
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some tasks.')
@@ -138,15 +134,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # test the serialization to adjust the number of bytes
-    dummy = (DummyData(args.bytes, 0), )
-    import pickle
-    serialized = pickle.dumps(dummy, 0)
-    final_bytes = args.bytes + args.bytes - len(serialized)
-    print(len(serialized), final_bytes)
+    data_sample = get_data_sample(args.bytes)
 
     if args.proc:
         processes = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, final_bytes, use_processes = True, use_subinterpreters = False)
+        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = True, use_subinterpreters = False)
         print(f"done in {res}ms")
         processes[0].append(args.workers) # x
         processes[1].append(res) # y
@@ -154,7 +146,7 @@ if __name__ == "__main__":
         print("processes =", processes, "bytes =", args.bytes, "ms =", args.ms)
     elif args.sub:
         subinterpreters = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, final_bytes, use_processes = False, use_subinterpreters = True)
+        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = False, use_subinterpreters = True)
         print(f"done in {res}ms")
         subinterpreters[0].append(args.workers) # x
         subinterpreters[1].append(res) # y
@@ -162,12 +154,13 @@ if __name__ == "__main__":
         print("subinterpreters =", subinterpreters, "bytes =", args.bytes, "ms =", args.ms)
     else:
         standard = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, final_bytes, use_processes = False, use_subinterpreters = False)
+        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = False, use_subinterpreters = False)
         print(f"done in {res}ms")
         standard[0].append(args.workers) # x
         standard[1].append(res) # y
 
         print("standard =", standard, "bytes =", args.bytes, "ms =", args.ms)
+
 
 # for i in 1 2 4 8 10 12 16 20 26 30 36 42 48 54 60 64; do for size in 1024 4096 8192 16384 32768 65536 524288 1048576; do echo $i $size; done; done
 # python3.12 benchmark/farm/bench.py -tasks 128 -workers 4 -ms 100 -bytes 512000 -sub
