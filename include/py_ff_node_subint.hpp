@@ -140,7 +140,8 @@ for [k, v] in glb:
         PyObject* py_args = arg == NULL ? nullptr:pickl->unpickle(*serialized_data);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
         //todo if (serialized_data) free(serialized_data);
-        PyObject* py_result = PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
+        
+        PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
 
         if (py_result == Py_None) {
@@ -152,7 +153,7 @@ for [k, v] in glb:
         CHECK_ERROR_THEN("pickle result failure: ", return NULL;)
         
         auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
-        std::cerr << "svc time " << svc_time_ms << "ms" << std::endl;
+        std::cerr << "serialized size = " << serialized_result->size() << ", svc time " << svc_time_ms << "ms" << std::endl;
         
         return (void*) serialized_result;
     }

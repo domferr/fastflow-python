@@ -46,7 +46,7 @@ public:
 
     std::string pickle(PyObject* object, int protocol = 5) {
         PyObject* protocol_obj = PyLong_FromLong(protocol);
-        PyObject* decoded_bytes = PyObject_CallFunctionObjArgs(pkl_dump_func, object, protocol_obj , nullptr);
+        PyObject* decoded_bytes = PyObject_CallFunctionObjArgs(pkl_dump_func, object, protocol_obj, nullptr);
         std::string str = PyBytes_AsString(decoded_bytes);
         Py_DECREF(protocol_obj);
         Py_DECREF(decoded_bytes);

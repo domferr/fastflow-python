@@ -3,6 +3,7 @@
 
 #include <Python.h>
 #include <ff/ff.hpp>
+#include <ff/distributed/ff_network.hpp>
 #include <iostream>
 #include <sys/wait.h>
 #include "error_macros.hpp"
@@ -21,7 +22,7 @@
 #define MESSAGE_TYPE_ACK '3'
 
 struct Message {
-    unsigned char type;
+    char type;
     std::string data;
     std::string f_name;
 };
@@ -39,7 +40,7 @@ int sendMessage(int read_fd, int send_fd, const Message& message) {
     if (write(send_fd, &dataSize, sizeof(dataSize)) == -1) {
         handleError("write data size", return -1);
     }
-    if (dataSize > 0 && write(send_fd, message.data.c_str(), dataSize) == -1) {
+    if (dataSize > 0 && writen(send_fd, message.data.c_str(), dataSize) == -1) {
         handleError("write data", return -1);
     }
 
@@ -49,7 +50,7 @@ int sendMessage(int read_fd, int send_fd, const Message& message) {
         handleError("write f_name size", return -1);
     }
 
-    if (fnameSize > 0 && write(send_fd, message.f_name.c_str(), fnameSize) == -1) {
+    if (fnameSize > 0 && writen(send_fd, message.f_name.c_str(), fnameSize) == -1) {
         handleError("write f_name", return -1);
     }
 
@@ -62,7 +63,7 @@ int sendMessage(int read_fd, int send_fd, const Message& message) {
 
 int receiveMessage(int read_fd, int send_fd, Message& message) {
     // recv type
-    int res = read(read_fd, (void*) &(message.type), sizeof(message.type));
+    int res = read(read_fd, &message.type, sizeof(message.type));
     if (res <= 0) handleError("read type", return res);
 
     // recv data
@@ -72,7 +73,7 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
 
     char* bufferData = new char[dataSize + 1];
     if (dataSize > 0) {
-        res = read(read_fd, bufferData, dataSize);
+        res = readn(read_fd, bufferData, dataSize);
         if (res <= 0) handleError("read data", return res);
     }
     
@@ -87,7 +88,7 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
 
     char* bufferFname = new char[fnameSize + 1];
     if (fnameSize > 0) {
-        res = read(read_fd, bufferFname, fnameSize);
+        res = readn(read_fd, bufferFname, fnameSize);
         if (res <= 0) handleError("read fname", return res);
     }
     
@@ -294,7 +295,7 @@ public:
         if (err <= 0) handleError("read result of remote svc call", );
         else {
             auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
-            std::cerr << "svc time " << svc_time_ms << "ms" << std::endl;
+            std::cerr << "serialized size = " << serialized_data->size() << ", svc time " << svc_time_ms << "ms" << std::endl;
             if (response.data == none_str) return NULL;
 
             return new std::string(response.data);
