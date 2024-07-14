@@ -16,4 +16,5 @@ def main():
 
 if __name__ == "__main__":
     os.environ["CC"] = "g++"
+    os.environ["CFLAGS"] = "-O3"
     main()

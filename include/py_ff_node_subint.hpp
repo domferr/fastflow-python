@@ -140,7 +140,8 @@ for [k, v] in glb:
         PyObject* py_args = arg == NULL ? nullptr:pickl->unpickle(*serialized_data);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
         //todo if (serialized_data) free(serialized_data);
-        PyObject* py_result = PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
+        
+        PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
 
         if (py_result == Py_None) {

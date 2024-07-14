@@ -1,0 +1,42 @@
+tasks: 512
+task length: 500ms
+
+subinterpreters = [[1], [256162.143]] bytes = 1024 ms = 500
+subinterpreters = [[1], [256191.335]] bytes = 4096 ms = 500
+subinterpreters = [[1], [256241.179]] bytes = 8192 ms = 500
+subinterpreters = [[1], [256318.439]] bytes = 16384 ms = 500
+subinterpreters = [[1], [256524.308]] bytes = 32768 ms = 500
+subinterpreters = [[1], [256904.575]] bytes = 65536 ms = 500
+subinterpreters = [[1], [262401.702]] bytes = 524288 ms = 500
+subinterpreters = [[1], [268441.466]] bytes = 1048576 ms = 500
+subinterpreters = [[2], [128130.242]] bytes = 1024 ms = 500
+subinterpreters = [[2], [128159.093]] bytes = 4096 ms = 500
+subinterpreters = [[2], [128169.595]] bytes = 8192 ms = 500
+subinterpreters = [[2], [128245.742]] bytes = 16384 ms = 500
+subinterpreters = [[2], [128330.061]] bytes = 32768 ms = 500
+subinterpreters = [[2], [128517.808]] bytes = 65536 ms = 500
+subinterpreters = [[2], [131404.925]] bytes = 524288 ms = 500
+subinterpreters = [[2], [134586.894]] bytes = 1048576 ms = 500
+subinterpreters = [[4], [64127.508]] bytes = 1024 ms = 500
+subinterpreters = [[4], [64141.639]] bytes = 4096 ms = 500
+subinterpreters = [[4], [64156.255]] bytes = 8192 ms = 500
+subinterpreters = [[4], [64172.325]] bytes = 16384 ms = 500
+subinterpreters = [[4], [64228.638]] bytes = 32768 ms = 500
+subinterpreters = [[4], [64347.323]] bytes = 65536 ms = 500
+subinterpreters = [[4], [65953.802]] bytes = 524288 ms = 500
+subinterpreters = [[4], [67706.176]] bytes = 1048576 ms = 500
+subinterpreters = [[8], [32164.707]] bytes = 1024 ms = 500
+subinterpreters = [[8], [32166.573]] bytes = 4096 ms = 500
+subinterpreters = [[8], [32167.243]] bytes = 8192 ms = 500
+subinterpreters = [[8], [32218.372]] bytes = 32768 ms = 500
+subinterpreters = [[8], [32277.839]] bytes = 65536 ms = 500
+subinterpreters = [[8], [33160.156]] bytes = 524288 ms = 500
+subinterpreters = [[8], [34171.897]] bytes = 1048576 ms = 500
+subinterpreters = [[10], [26114.833]] bytes = 1024 ms = 500
+subinterpreters = [[10], [26157.956]] bytes = 32768 ms = 500
+subinterpreters = [[10], [26260.512]] bytes = 65536 ms = 500
+subinterpreters = [[10], [26907.05]] bytes = 524288 ms = 500
+subinterpreters = [[10], [27661.482]] bytes = 1048576 ms = 500
+subinterpreters = [[12], [21683.774]] bytes = 1024 ms = 500
+subinterpreters = [[12], [21738.501]] bytes = 32768 ms = 500
+subinterpreters = [[12], [21770.187]] bytes = 65536 ms = 500
