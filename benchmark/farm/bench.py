@@ -34,7 +34,7 @@ class emitter():
         self.data_sample = data_sample
 
     def svc_init(self):
-        print(f'[emitter] svc_init was called')
+        print('[emitter] svc_init was called')
         return 0
 
     def svc(self, *args):
@@ -69,11 +69,11 @@ class worker():
 
 class collector():
     def svc_init(self):
-        print(f'[collector] svc_init was called')
+        print('[collector] svc_init was called')
         return 0
     
     def svc(self, *args):
-        print(f'[collector] svc')
+        print('[collector] svc')
 
         return args
 
@@ -111,9 +111,13 @@ def build_farm(n_tasks, task_ms, nworkers, data_sample, use_processes = True, us
 
     return farm
 
-def run_farm(n_tasks, task_ms, nworkers, data_sample, use_processes = False, use_subinterpreters = False):
+def run_farm(n_tasks, task_ms, nworkers, data_sample, use_processes = False, use_subinterpreters = False, blocking_mode = None, no_mapping = False):
     print(f"run farm of {nworkers} workers and {n_tasks} tasks", file=sys.stderr)
     farm = build_farm(n_tasks, task_ms, nworkers, data_sample, use_processes, use_subinterpreters)
+    if blocking_mode is not None:
+        farm.blocking_mode(blocking_mode)
+    if no_mapping:
+        farm.no_mapping()
     farm.run_and_wait_end()
     return farm.ffTime()
 
@@ -122,15 +126,22 @@ def get_data_sample(task_bytes):
     result = ascii_letters * int(task_bytes / len(ascii_letters))
     return result
 
+def print_res(title, res, args):
+    print(title)
+    print(f"res[{args.bytes}] = res.get({args.bytes}, []); res.get({args.bytes}).append(({args.workers}, {res})) # bytes =", args.bytes, "ms =", args.ms)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some tasks.')
     parser.add_argument('-tasks', type=int, help='Number of tasks to process', required=True)
     parser.add_argument('-workers', type=int, help='Number of workers of the farm', required=True)
     parser.add_argument('-ms', type=int, help='Duration in milliseconds of one task', required=True)
     parser.add_argument('-bytes', type=int, help='The size, in bytes, of one task', required=True)
+    parser.add_argument('-blocking-mode', help='The blocking mode of the farm', required=False, action='store_true', default=None)
+    parser.add_argument('-no-mapping', help="Disable fastflow's mapping", required=False, action='store_true')
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('-proc', action='store_true', help='Use multiprocessing to process tasks')
     group.add_argument('-sub', action='store_true', help='Use subinterpreters to process tasks')
+    group.add_argument('-seq', action='store_true', help='Run tasks sequentially')
     args = parser.parse_args()
 
     # test the serialization to adjust the number of bytes
@@ -138,20 +149,20 @@ if __name__ == "__main__":
 
     if args.proc:
         processes = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = True, use_subinterpreters = False)
+        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = True, use_subinterpreters = False, blocking_mode = args.blocking_mode, no_mapping = args.no_mapping)
         print(f"done in {res}ms")
         processes[0].append(args.workers) # x
         processes[1].append(res) # y
 
-        print("processes =", processes, "bytes =", args.bytes, "ms =", args.ms)
+        print_res("processes", res, args)
     elif args.sub:
         subinterpreters = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = False, use_subinterpreters = True)
+        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = False, use_subinterpreters = True, blocking_mode = args.blocking_mode, no_mapping = args.no_mapping)
         print(f"done in {res}ms")
         subinterpreters[0].append(args.workers) # x
         subinterpreters[1].append(res) # y
 
-        print("subinterpreters =", subinterpreters, "bytes =", args.bytes, "ms =", args.ms)
+        print_res("subinterpreters", res, args)
     else:
         standard = [[],[]]
         res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = False, use_subinterpreters = False)
@@ -159,7 +170,7 @@ if __name__ == "__main__":
         standard[0].append(args.workers) # x
         standard[1].append(res) # y
 
-        print("standard =", standard, "bytes =", args.bytes, "ms =", args.ms)
+        print_res("standard", res, args)
 
 
 # for i in 1 2 4 8 10 12 16 20 26 30 36 42 48 54 60 64; do for size in 1024 4096 8192 16384 32768 65536 524288 1048576; do echo $i $size; done; done

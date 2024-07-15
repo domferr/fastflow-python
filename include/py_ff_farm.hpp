@@ -23,8 +23,6 @@ typedef struct {
 
 PyObject *py_ff_farm_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    std::cout << "py_ff_farm_new() called!" << std::endl;
-
     py_ff_farm_object *self;
     self = (py_ff_farm_object*) type->tp_alloc(type, 0);
     if(self != NULL){ // -> allocation successfull
@@ -37,7 +35,6 @@ PyObject *py_ff_farm_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
 int py_ff_farm_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
-    std::cout << "py_ff_farm_init() called!" << std::endl;
     py_ff_farm_object* m = (py_ff_farm_object*)self;
 
     PyObject* bool_arg = Py_True;
@@ -77,7 +74,6 @@ int py_ff_farm_init(PyObject *self, PyObject *args, PyObject *kwds)
 
 void py_ff_farm_dealloc(py_ff_farm_object *self)
 {
-    std::cout << "py_ff_farm_dealloc() called!" << std::endl;
     PyTypeObject *tp = Py_TYPE(self);
 
     py_ff_farm_object* m = reinterpret_cast<py_ff_farm_object*>(self);
@@ -91,7 +87,7 @@ void py_ff_farm_dealloc(py_ff_farm_object *self)
     Py_DECREF(tp);
 }
 
-PyDoc_STRVAR(py_ff_farm_ffTime_doc, "Return an incrmented integer");
+PyDoc_STRVAR(py_ff_farm_ffTime_doc, "Return the time elapsed");
 
 PyObject* py_ff_farm_ffTime(PyObject *self, PyObject *args)
 {
@@ -228,6 +224,34 @@ PyObject* py_ff_farm_add_collector_process(PyObject *self, PyObject *arg)
     return PyLong_FromLong(val);
 }
 
+PyDoc_STRVAR(py_ff_farm_blocking_mode_doc, "Set farm's blocking mode");
+
+PyObject* py_ff_farm_blocking_mode(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
+
+    PyObject* bool_arg = PyBool_Check(arg) == 1 ? arg:Py_False;
+    bool enable = PyObject_IsTrue(bool_arg) == 1;
+    _self->farm->blocking_mode(enable);
+    std::cout << "blocking mode set to " << enable << std::endl;
+
+    return Py_None;
+}
+
+PyDoc_STRVAR(py_ff_farm_no_mapping_doc, "Disable fastflow's mapping for this farm");
+
+PyObject* py_ff_farm_no_mapping(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
+    _self->farm->no_mapping();
+
+    return Py_None;
+}
+
 static PyMethodDef py_ff_farm_methods[] = {
     { "ffTime",           (PyCFunction) py_ff_farm_ffTime, 
         METH_NOARGS, py_ff_farm_ffTime_doc },
@@ -245,6 +269,10 @@ static PyMethodDef py_ff_farm_methods[] = {
         METH_O, py_ff_farm_add_collector_doc },
     { "add_collector_process", (PyCFunction) py_ff_farm_add_collector_process, 
         METH_O, py_ff_farm_add_collector_process_doc },
+    { "blocking_mode", (PyCFunction) py_ff_farm_blocking_mode, 
+        METH_O, py_ff_farm_blocking_mode_doc },
+    { "no_mapping", (PyCFunction) py_ff_farm_no_mapping, 
+        METH_NOARGS, py_ff_farm_no_mapping_doc },
     {NULL, NULL} /* Sentinel */
 };
 

@@ -7,6 +7,7 @@
 #include <chrono>
 #include "error_macros.hpp"
 #include "pickle.hpp"
+#include "log.hpp"
 
 class py_ff_node_subint: public ff::ff_node {
 public:
@@ -29,12 +30,12 @@ public:
         // Hold the main GIL
         PyEval_RestoreThread(tstate);
 
-        // Load pickling/unpickling functions
-        LOAD_PICKLE_UNPICKLE
+        // Load pickling/unpickling functions but in the main interpreter
+        pickling pickling_main;
         CHECK_ERROR_THEN("load pickle and unpickle failure: ", return -1;)
 
-        // serialize Python node to string
-        PICKLE_PYOBJECT(node_str, node);
+        // serialize Python node to bytes
+        auto node_ser = pickling_main.pickle_bytes(node);
         CHECK_ERROR_THEN("pickle node failure: ", return -1;)
         
         PyObject* main_module = PyImport_ImportModule("__main__");
@@ -47,28 +48,31 @@ public:
 glb = [[k,v] for k,v in globals().items() if not (k.startswith('__') and k.endswith('__'))]
 
 import inspect
-res = ""
+__ff_res = ""
 for [k, v] in glb:
     try:
         if inspect.ismodule(v):
-            res += f"import {k}"
+            if v.__package__:
+                __ff_res += f"from {v.__package__} import {k}"
+            else: # v.__package__ is empty is the module and the package are the same
+                __ff_res += f"import {k}"
         elif inspect.isclass(v) or inspect.isfunction(v):
-            res += inspect.getsource(v)
+            __ff_res += inspect.getsource(v)
         #else:
-        #    res += f"{k} = {v}"
-        res += "\n"
+        #    __ff_res += f"{k} = {v}"
+        __ff_res += "\n"
     except:
         pass
         )PY", Py_file_input, globals, NULL);
         CHECK_ERROR_THEN("PyRun_String failure: ", return -1;)
 
-        PyObject* result = PyDict_GetItemString(globals, "res");
+        PyObject* result = PyDict_GetItemString(globals, "__ff_res");
         std::string env_str = std::string(PyUnicode_AsUTF8(PyObject_Str(result)));
         
         // Cleanup of objects created
         Py_DECREF(result);
         //todo Py_DECREF(globals);
-        UNLOAD_PICKLE_UNPICKLE
+        pickling_main.~pickling();
 
         // Create a new sub-interpreter with its own GIL
         PyInterpreterConfig sub_interp_config = {
@@ -107,7 +111,7 @@ for [k, v] in glb:
 
         // deserialize Python node
         // overwrite the old node (from the main interpreter) with the new one (in this subinterpreter)
-        node = pickl->unpickle(node_str);
+        node = pickl->unpickle_bytes(node_ser);
         CHECK_ERROR_THEN("unpickle node failure: ", returnValue = -1;)
 
         svc_func = PyObject_GetAttrString(node, "svc");
@@ -129,17 +133,29 @@ for [k, v] in glb:
         if (returnValue != 0) cleanup();
 
         auto svc_init_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_init_start_time).count();
-        std::cerr << "svc_init time " << svc_init_time_ms << "ms" << std::endl;
+        LOG("svc_init time " << svc_init_time_ms << "ms");
         return returnValue;
     }
 
-    void * svc(void *arg) override {      
-        auto svc_start_time = std::chrono::system_clock::now();  
-        std::string* serialized_data = arg == NULL ? NULL:reinterpret_cast<std::string*>(arg);
+    void * svc(void *arg) override {
+        /*PyObject* py_args = arg == NULL ? nullptr:reinterpret_cast<PyObject*>(arg);
+        PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
+        CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
         
-        PyObject* py_args = arg == NULL ? nullptr:pickl->unpickle(*serialized_data);
+        if (py_result == Py_None) {
+            Py_DECREF(py_result);
+            return NULL;
+        }
+
+        Py_INCREF(py_result);
+        return (void*) py_result;*/
+        
+        auto svc_start_time = std::chrono::system_clock::now();  
+        PyObject* pickled_bytes = arg == NULL ? NULL:reinterpret_cast<PyObject*>(arg);
+        
+        PyObject* py_args = arg == NULL ? nullptr:pickl->unpickle_bytes(pickled_bytes);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
-        //todo if (serialized_data) free(serialized_data);
+        //if (pickled_bytes) Py_DECREF(pickled_bytes);
         
         PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
@@ -149,13 +165,14 @@ for [k, v] in glb:
             return NULL;
         }
 
-        auto serialized_result = new std::string(pickl->pickle(py_result, 0));
+        auto pickled_result_bytes = pickl->pickle_bytes(py_result);
         CHECK_ERROR_THEN("pickle result failure: ", return NULL;)
+        //Py_INCREF(pickled_result_bytes);
         
         auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
-        std::cerr << "serialized size = " << serialized_result->size() << ", svc time " << svc_time_ms << "ms" << std::endl;
+        LOG("svc time " << svc_time_ms << "ms");
         
-        return (void*) serialized_result;
+        return (void*) pickled_result_bytes;
     }
 
     void cleanup() {
@@ -186,7 +203,7 @@ for [k, v] in glb:
         cleanup();
 
         auto svc_end_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_end_start_time).count();
-        std::cerr << "svc_end time " << svc_end_time_ms << "ms" << std::endl;
+        LOG("svc_end time " << svc_end_time_ms << "ms");
     }
 
 private:

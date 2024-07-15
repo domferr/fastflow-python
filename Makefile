@@ -1,3 +1,5 @@
+.PHONY: clean config repara-copy titanic-copy build
+
 clean:
 	rm -rf build
 
