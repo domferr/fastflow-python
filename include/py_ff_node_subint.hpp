@@ -51,7 +51,10 @@ __ff_res = ""
 for [k, v] in glb:
     try:
         if inspect.ismodule(v):
-            __ff_res += f"import {k}"
+            if v.__package__:
+                __ff_res += f"from {v.__package__} import {k}"
+            else: # v.__package__ is empty is the module and the package are the same
+                __ff_res += f"import {k}"
         elif inspect.isclass(v) or inspect.isfunction(v):
             __ff_res += inspect.getsource(v)
         #else:
