@@ -11,10 +11,6 @@ class emitter():
     def __init__(self, images_path):
         self.images_path = images_path
 
-    def svc_init(self):
-        print(f'[emitter] svc_init was called')
-        return 0
-
     def svc(self, *args):
         print('[emitter] svc')
         if len(self.images_path) == 0:
@@ -23,16 +19,9 @@ class emitter():
         next = self.images_path.pop()
         return next
 
-    def svc_end(self):
-        print(f'[emitter] svc_end was called')
-
 class worker():
     def __init__(self, id):
         self.id = id
-
-    def svc_init(self):
-        print(f'[{self.id} | worker] svc_init was called')
-        return 0
 
     def svc(self, image_file):
         print(f'[{self.id} | worker] svc {image_file}')
@@ -42,22 +31,6 @@ class worker():
         blurImage.save(f'images/blur/{self.id}_{image_file}')
 
         return args
-
-    def svc_end(self):
-        print(f'[{self.id} | worker] svc_end was called')
-
-class collector():
-    def svc_init(self):
-        print(f'[collector] svc_init was called')
-        return 0
-    
-    def svc(self, *args):
-        print(f'[collector] svc')
-
-        return args
-
-    def svc_end(self):
-        print(f'[collector] svc_end was called')
 
 def build_farm(images_path, nworkers, use_processes = True, use_subinterpreters = False):
     farm = FFFarm(use_subinterpreters)
@@ -80,13 +53,6 @@ def build_farm(images_path, nworkers, use_processes = True, use_subinterpreters 
         farm.add_workers_process(w_lis)
     else:
         farm.add_workers(w_lis)
-
-    # collector
-    coll = collector()
-    if use_processes:
-        farm.add_collector_process(coll)
-    else:
-        farm.add_collector(coll)
 
     return farm
 

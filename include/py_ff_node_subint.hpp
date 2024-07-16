@@ -7,6 +7,7 @@
 #include <chrono>
 #include "error_macros.hpp"
 #include "pickle.hpp"
+#include "log.hpp"
 
 class py_ff_node_subint: public ff::ff_node {
 public:
@@ -132,7 +133,7 @@ for [k, v] in glb:
         if (returnValue != 0) cleanup();
 
         auto svc_init_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_init_start_time).count();
-        std::cerr << "svc_init time " << svc_init_time_ms << "ms" << std::endl;
+        LOG("svc_init time " << svc_init_time_ms << "ms");
         return returnValue;
     }
 
@@ -169,7 +170,7 @@ for [k, v] in glb:
         Py_INCREF(pickled_result_bytes);
         
         auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
-        std::cerr << "svc time " << svc_time_ms << "ms" << std::endl;
+        LOG("svc time " << svc_time_ms << "ms");
         
         return (void*) pickled_result_bytes;
     }
@@ -202,7 +203,7 @@ for [k, v] in glb:
         cleanup();
 
         auto svc_end_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_end_start_time).count();
-        std::cerr << "svc_end time " << svc_end_time_ms << "ms" << std::endl;
+        LOG("svc_end time " << svc_end_time_ms << "ms");
     }
 
 private:

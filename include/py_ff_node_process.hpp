@@ -8,14 +8,7 @@
 #include <sys/wait.h>
 #include "error_macros.hpp"
 #include "pickle.hpp"
-
-#define DEBUG 1
-
-#ifdef DEBUG
-#    define LOG(msg) std::cerr << msg << std::endl
-#else
-#    define LOG(msg) do { } while(0);
-#endif
+#include "log.hpp"
 
 #define MESSAGE_TYPE_RESPONSE '1'
 #define MESSAGE_TYPE_REMOTE_FUNCTION_CALL '2'
@@ -139,7 +132,6 @@ void process_body(int read_fd, int send_fd) {
             // deserialize data
             auto py_args_tuple = pickl.unpickle(message.data);
             CHECK_ERROR_THEN("[child] deserialize data failure: ", cleanup_exit();)
-
             // call function
             PyObject *py_func = PyObject_GetAttrString(node, message.f_name.c_str());
             CHECK_ERROR_THEN("[child] get node function: ", cleanup_exit();)
@@ -190,6 +182,9 @@ public:
         // Hold the main GIL
         PyEval_RestoreThread(tstate);
 
+        has_svc_init = PyObject_HasAttrString(node, "svc_init") == 1;
+        has_svc_end = PyObject_HasAttrString(node, "svc_end") == 1;
+        
         // Load pickling/unpickling functions
         pickling pickl;
         CHECK_ERROR_THEN("load pickle and unpickle failure: ", return -1;)
@@ -252,7 +247,7 @@ public:
                 int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = node_str, .f_name = "" });
                 if (err <= 0) handleError("send serialized node", returnValue = -1);
 
-                if (err > 0) {
+                if (err > 0 && has_svc_init) {
                     Message response;
                     int err = remote_function_call(empty_tuple_str, "svc_init", response);
                     if (err <= 0) {
@@ -334,9 +329,11 @@ public:
     void svc_end() override {
         auto svc_end_start_time = std::chrono::system_clock::now();
 
-        Message response;
-        int err = remote_function_call(empty_tuple_str, "svc_end", response);
-        if (err <= 0) handleError("read result of remote call of svc_end", );
+        if (has_svc_end) {
+            Message response;
+            int err = remote_function_call(empty_tuple_str, "svc_end", response);
+            if (err <= 0) handleError("read result of remote call of svc_end", );
+        }
 
         // close the pipes, so the process can stop meanwhile we acquire the GIL and cleanup everything
         if (send_fd > 0) close(send_fd);
@@ -357,6 +354,8 @@ public:
 private:
     PyThreadState *tstate;
     PyObject* node;
+    bool has_svc_init;
+    bool has_svc_end;
     int send_fd;
     int read_fd;
     pid_t pid;
