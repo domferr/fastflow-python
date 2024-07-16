@@ -122,6 +122,10 @@ def get_data_sample(task_bytes):
     result = ascii_letters * int(task_bytes / len(ascii_letters))
     return result
 
+def print_res(title, res, args):
+    print(title)
+    print(f"res[{args.bytes}] = res.get({args.bytes}, []); res.get({args.bytes}).append(({args.workers}, {res})) # bytes =", args.bytes, "ms =", args.ms)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some tasks.')
     parser.add_argument('-tasks', type=int, help='Number of tasks to process', required=True)
@@ -143,7 +147,7 @@ if __name__ == "__main__":
         processes[0].append(args.workers) # x
         processes[1].append(res) # y
 
-        print("processes =", processes, "bytes =", args.bytes, "ms =", args.ms)
+        print_res("processes", res, args)
     elif args.sub:
         subinterpreters = [[],[]]
         res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = False, use_subinterpreters = True)
@@ -151,7 +155,7 @@ if __name__ == "__main__":
         subinterpreters[0].append(args.workers) # x
         subinterpreters[1].append(res) # y
 
-        print("subinterpreters =", subinterpreters, "bytes =", args.bytes, "ms =", args.ms)
+        print_res("subinterpreters", res, args)
     else:
         standard = [[],[]]
         res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = False, use_subinterpreters = False)
@@ -159,7 +163,7 @@ if __name__ == "__main__":
         standard[0].append(args.workers) # x
         standard[1].append(res) # y
 
-        print("standard =", standard, "bytes =", args.bytes, "ms =", args.ms)
+        print_res("standard", res, args)
 
 
 # for i in 1 2 4 8 10 12 16 20 26 30 36 42 48 54 60 64; do for size in 1024 4096 8192 16384 32768 65536 524288 1048576; do echo $i $size; done; done

@@ -36,7 +36,7 @@ int sendMessage(int read_fd, int send_fd, const Message& message) {
     }
 
     // send data
-    uint32_t dataSize = message.data.size();
+    uint32_t dataSize = message.data.length();
     if (write(send_fd, &dataSize, sizeof(dataSize)) == -1) {
         handleError("write data size", return -1);
     }
@@ -70,7 +70,6 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     uint32_t dataSize;
     res = read(read_fd, &dataSize, sizeof(dataSize));
     if (res <= 0) handleError("read data size", return res);
-
     char* bufferData = new char[dataSize + 1];
     if (dataSize > 0) {
         res = readn(read_fd, bufferData, dataSize);
@@ -79,8 +78,9 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     
     bufferData[dataSize] = '\0';
     message.data = std::string(bufferData);
+    message.data.assign(bufferData, dataSize);
     delete[] bufferData;
-
+    
     // recv f_name
     uint32_t fnameSize;
     res = read(read_fd, &fnameSize, sizeof(fnameSize));
@@ -150,7 +150,7 @@ void process_body(int read_fd, int send_fd) {
                 CHECK_ERROR_THEN("[child] call function failure: ", cleanup_exit();)
 
                 // serialize response
-                auto result_str = pickl.pickle(py_result, 0);
+                auto result_str = pickl.pickle(py_result);
                 CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
 
                 // send response
@@ -195,7 +195,7 @@ public:
         CHECK_ERROR_THEN("load pickle and unpickle failure: ", return -1;)
 
         // serialize Python node to string
-        auto node_str = pickl.pickle(node, 0);
+        auto node_str = pickl.pickle(node);
         CHECK_ERROR_THEN("pickle node failure: ", return -1;)
 
         PyObject* empty_tuple = PyTuple_New(0);
@@ -203,7 +203,7 @@ public:
         CHECK_ERROR_THEN("pickle empty tuple failure: ", return -1;)
         Py_DECREF(empty_tuple);
 
-        none_str = std::string(pickl.pickle(Py_None, 0));
+        none_str = std::string(pickl.pickle(Py_None));
         CHECK_ERROR_THEN("pickle None failure: ", return -1;)
 
         pickl.~pickling();
