@@ -206,7 +206,6 @@ public:
         none_str = std::string(pickl.pickle(Py_None));
         CHECK_ERROR_THEN("pickle None failure: ", return -1;)
 
-        pickl.~pickling();
         int returnValue = 0;
 
         int mainToChildFD[2]; // data to be sent from main process to child process
@@ -243,6 +242,7 @@ public:
 
                 // Release the main GIL
                 PyEval_SaveThread();
+
                 close(mainToChildFD[0]); // Close read end of mainToChildFD
                 close(childToMainFD[1]); // Close write end of childToMainFD
 
@@ -253,27 +253,31 @@ public:
                 if (err <= 0) handleError("send serialized node", returnValue = -1);
 
                 if (err > 0) {
-                    err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = empty_tuple_str, .f_name = "svc_init" });
-                    if (err <= 0) handleError("remote svc_init call", returnValue = -1);
-                    else if (err > 0) {
-                        Message message;
-                        err = receiveMessage(read_fd, send_fd, message);
-                        if (err <= 0) handleError("read result of remote svc_init call", returnValue = -1);
-                        else {
-                            std::cout << "TODO: parse svc_init response" << std::endl;
-                            returnValue = 0;
+                    Message response;
+                    int err = remote_function_call(empty_tuple_str, "svc_init", response);
+                    if (err <= 0) {
+                        handleError("read result of remote call of svc_end", );
+                    } else {
+                        // Hold the main GIL
+                        PyEval_RestoreThread(tstate);
+                        PyObject *svc_init_result = pickl.unpickle(response.data);
+                        CHECK_ERROR_THEN("unpickle svc_init_result failure: ", returnValue = -1;)
+                        returnValue = 0;
+                        // if we are here, then the GIL was acquired before
+                        if (PyLong_Check(svc_init_result)) {
+                            long res_as_long = PyLong_AsLong(svc_init_result);
+                            returnValue = static_cast<int>(res_as_long);
                         }
+                        Py_DECREF(svc_init_result);
+                        pickl.~pickling();
+                        // Release the main GIL
+                        PyEval_SaveThread();
                     }
                 }
             }
         }
 
-        if (returnValue != 0) {
-            // Acquire the main GIL
-            PyEval_RestoreThread(tstate);
-            cleanup();
-        }
-
+        // from here the GIL is NOT acquired
         auto svc_init_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_init_start_time).count();
         std::cerr << "svc_init time " << svc_init_time_ms << "ms" << std::endl;
         return returnValue;
@@ -283,16 +287,9 @@ public:
         auto svc_start_time = std::chrono::system_clock::now(); 
         std::string* serialized_data = arg == NULL ? &empty_tuple_str:reinterpret_cast<std::string*>(arg);
         
-        int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = *serialized_data, .f_name = "svc" });
-        //todo if (arg != NULL) free(serialized_data);
-        if (err <= 0) {
-            perror("svc send serialized data");
-            return NULL;
-        }
-
         Message response;
-        err = receiveMessage(read_fd, send_fd, response);
-        if (err <= 0) handleError("read result of remote svc call", );
+        int err = remote_function_call(*serialized_data, "svc", response);
+        if (err <= 0) handleError("remote call of svc", );
         else {
             auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
             std::cerr << "serialized size = " << serialized_data->size() << ", svc time " << svc_time_ms << "ms" << std::endl;
@@ -319,18 +316,27 @@ public:
         send_fd = -1;
     }
 
+    int remote_function_call(std::string &data, const char *f_name, Message &response) {
+        if (send_fd == -1 || read_fd == -1) {
+            // they are -1 if an error occurred during svc_init or svc
+            return -1;
+        }
+        
+        int err = sendMessage(read_fd, send_fd, { 
+            .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, 
+            .data = data, 
+            .f_name = f_name });
+        if (err <= 0) return err;
+
+        return receiveMessage(read_fd, send_fd, response);
+    }
+
     void svc_end() override {
         auto svc_end_start_time = std::chrono::system_clock::now();
 
-        if (send_fd > 0 && read_fd > 0) { // they are -1 if an error occurred during svc_init or svc
-            int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = empty_tuple_str, .f_name = "svc_end" });
-            if (err <= 0) perror("remote call of svc_end");
-            else if (err > 0) {
-                Message message;
-                err = receiveMessage(read_fd, send_fd, message);
-                if (err <= 0) handleError("read result of remote call of svc_end", );
-            }
-        }
+        Message response;
+        int err = remote_function_call(empty_tuple_str, "svc_end", response);
+        if (err <= 0) handleError("read result of remote call of svc_end", );
 
         // close the pipes, so the process can stop meanwhile we acquire the GIL and cleanup everything
         if (send_fd > 0) close(send_fd);
@@ -343,7 +349,6 @@ public:
         // Acquire the main GIL
         PyEval_RestoreThread(tstate);
         cleanup();
-        //waitpid(pid, nullptr, 0);
 
         auto svc_end_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_end_start_time).count();
         std::cerr << "svc_end time " << svc_end_time_ms << "ms" << std::endl;
