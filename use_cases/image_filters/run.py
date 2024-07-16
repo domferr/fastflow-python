@@ -5,6 +5,7 @@ import sys
 import os
 import shutil
 import time
+import multiprocessing
 
 class emitter():
     def __init__(self, images_path):
@@ -102,6 +103,7 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('-proc', action='store_true', help='Use multiprocessing to process tasks')
     group.add_argument('-sub', action='store_true', help='Use subinterpreters to process tasks')
+    group.add_argument('-seq', action='store_true', help='Run tasks sequentially')
     args = parser.parse_args()
 
     images_path = ["wallpaper.png" for _ in range(args.images)]
@@ -120,7 +122,7 @@ if __name__ == "__main__":
         print(f"done in {res}ms")
 
         print(f"subinterpreters = {res}ms, workers = {args.workers}")
-    else:
+    elif args.seq:
         print(f"Apply sequentially the image filter to {len(images_path)} images")
         start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
         for img in images_path:
@@ -131,3 +133,36 @@ if __name__ == "__main__":
 
         res = (end - start) / 1_000_000
         print(f"sequential = {res}ms")
+    else:
+        def process_fun(images, id):
+            for img in images:
+                image = Image.open(f'images/{img}')
+                blurImage = image.filter(ImageFilter.GaussianBlur(20))
+                blurImage.save(f'images/blur/proc{id}-{img}')
+        
+        start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+        # create a list for each process to put into it
+        # the images the process will to work on
+        proc_images = [[] for _ in range(args.workers)]
+        # round-robin
+        i = 0
+        for img in images_path:
+            proc_images[i].append(img)
+            i = (i + 1) % args.workers
+
+        # spawn processes
+        processes = []
+        for i in range(args.workers):
+            proc = multiprocessing.Process(target=process_fun, args=(proc_images[i],i))
+            processes.append(proc)
+            proc.start()
+
+        # join processes
+        for proc in processes:
+            proc.join()
+
+        end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+        res = (end - start) / 1_000_000
+        print(f"python multiprocessing = {res}ms")

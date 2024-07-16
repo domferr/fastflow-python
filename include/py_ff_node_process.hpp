@@ -279,7 +279,7 @@ public:
 
         // from here the GIL is NOT acquired
         auto svc_init_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_init_start_time).count();
-        std::cerr << "svc_init time " << svc_init_time_ms << "ms" << std::endl;
+        LOG("svc_init time " << svc_init_time_ms << "ms");
         return returnValue;
     }
 
@@ -292,13 +292,13 @@ public:
         if (err <= 0) handleError("remote call of svc", );
         else {
             auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
-            std::cerr << "serialized size = " << serialized_data->size() << ", svc time " << svc_time_ms << "ms" << std::endl;
+            LOG("serialized size = " << serialized_data->size() << ", svc time " << svc_time_ms << "ms");
             if (response.data == none_str) return NULL;
 
             return new std::string(response.data);
         }
 
-        std::cerr << "an error occurred, abort." << std::endl;
+        LOG("an error occurred, abort.");
 
         return NULL;
     }
@@ -351,7 +351,7 @@ public:
         cleanup();
 
         auto svc_end_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_end_start_time).count();
-        std::cerr << "svc_end time " << svc_end_time_ms << "ms" << std::endl;
+        LOG("svc_end time " << svc_end_time_ms << "ms");
     }
 
 private:
