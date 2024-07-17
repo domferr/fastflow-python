@@ -108,7 +108,7 @@ if __name__ == "__main__":
         
         start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
 
-        # create a list for each process to put into it
+        # create a list for each process and add
         # the images the process will to work on
         proc_images = [[] for _ in range(args.workers)]
         # round-robin
