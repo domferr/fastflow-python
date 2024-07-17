@@ -5,14 +5,14 @@ import sys
 import os
 import shutil
 import time
-import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import wait
 
 class emitter():
     def __init__(self, images_path):
         self.images_path = images_path
 
     def svc(self, *args):
-        print('[emitter] svc')
         if len(self.images_path) == 0:
             return None
         
@@ -24,13 +24,11 @@ class worker():
         self.id = id
 
     def svc(self, image_file):
-        print(f'[{self.id} | worker] svc {image_file}')
-        
         image = Image.open(f'images/{image_file}')
         blurImage = image.filter(ImageFilter.GaussianBlur(20))
         blurImage.save(f'images/blur/{self.id}_{image_file}')
 
-        return args
+        return image_file
 
 def build_farm(images_path, nworkers, use_processes = True, use_subinterpreters = False):
     farm = FFFarm(use_subinterpreters)
@@ -100,33 +98,17 @@ if __name__ == "__main__":
         res = (end - start) / 1_000_000
         print(f"sequential = {res}ms")
     else:
-        def process_fun(images, id):
-            for img in images:
-                image = Image.open(f'images/{img}')
-                blurImage = image.filter(ImageFilter.GaussianBlur(20))
-                blurImage.save(f'images/blur/proc{id}-{img}')
+        def blur_filter(img):
+            image = Image.open(f'images/{img}')
+            blurImage = image.filter(ImageFilter.GaussianBlur(20))
+            blurImage.save(f'images/blur/proc{id}-{img}')
         
         start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
 
-        # create a list for each process and add
-        # the images the process will to work on
-        proc_images = [[] for _ in range(args.workers)]
-        # round-robin
-        i = 0
-        for img in images_path:
-            proc_images[i].append(img)
-            i = (i + 1) % args.workers
-
-        # spawn processes
-        processes = []
-        for i in range(args.workers):
-            proc = multiprocessing.Process(target=process_fun, args=(proc_images[i],i))
-            processes.append(proc)
-            proc.start()
-
-        # join processes
-        for proc in processes:
-            proc.join()
+        with ProcessPoolExecutor(max_workers=args.workers) as exe:
+            # issue tasks to the process pool
+            futures = [exe.submit(blur_filter, img) for img in images_path ]
+            wait(futures)
 
         end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
 

@@ -23,8 +23,6 @@ typedef struct {
 
 PyObject *py_ff_pipeline_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    std::cout << "py_ff_pipeline_new() called!" << std::endl;
-
     py_ff_pipeline_object *self;
     self = (py_ff_pipeline_object*) type->tp_alloc(type, 0);
     if(self != NULL){ // -> allocation successfull
@@ -37,7 +35,6 @@ PyObject *py_ff_pipeline_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
 int py_ff_pipeline_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
-    std::cout << "ff::ff_pipeline_init() called!" << std::endl;
     py_ff_pipeline_object* m = (py_ff_pipeline_object*)self;
 
     PyObject* bool_arg = Py_True;
@@ -77,7 +74,6 @@ int py_ff_pipeline_init(PyObject *self, PyObject *args, PyObject *kwds)
 
 void py_ff_pipeline_dealloc(py_ff_pipeline_object *self)
 {
-    std::cout << "ff::ff_pipeline_dealloc() called!" << std::endl;
     PyTypeObject *tp = Py_TYPE(self);
 
     py_ff_pipeline_object* m = reinterpret_cast<py_ff_pipeline_object*>(self);

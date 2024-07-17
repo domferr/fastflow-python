@@ -23,8 +23,6 @@ typedef struct {
 
 PyObject *py_ff_farm_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    std::cout << "py_ff_farm_new() called!" << std::endl;
-
     py_ff_farm_object *self;
     self = (py_ff_farm_object*) type->tp_alloc(type, 0);
     if(self != NULL){ // -> allocation successfull
@@ -37,7 +35,6 @@ PyObject *py_ff_farm_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
 int py_ff_farm_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
-    std::cout << "py_ff_farm_init() called!" << std::endl;
     py_ff_farm_object* m = (py_ff_farm_object*)self;
 
     PyObject* bool_arg = Py_True;
@@ -77,7 +74,6 @@ int py_ff_farm_init(PyObject *self, PyObject *args, PyObject *kwds)
 
 void py_ff_farm_dealloc(py_ff_farm_object *self)
 {
-    std::cout << "py_ff_farm_dealloc() called!" << std::endl;
     PyTypeObject *tp = Py_TYPE(self);
 
     py_ff_farm_object* m = reinterpret_cast<py_ff_farm_object*>(self);
@@ -91,7 +87,7 @@ void py_ff_farm_dealloc(py_ff_farm_object *self)
     Py_DECREF(tp);
 }
 
-PyDoc_STRVAR(py_ff_farm_ffTime_doc, "Return an incrmented integer");
+PyDoc_STRVAR(py_ff_farm_ffTime_doc, "Return the time elapsed");
 
 PyObject* py_ff_farm_ffTime(PyObject *self, PyObject *args)
 {
