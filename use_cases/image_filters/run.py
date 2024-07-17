@@ -24,11 +24,34 @@ class worker():
         self.id = id
 
     def svc(self, image_file):
+        print(f"worker {self.id} -> {image_file}")
+
+        start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
         image = Image.open(f'images/{image_file}')
+        end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+        res = (end - start) / 1_000_000
+        print(f"read took {res}ms")
+
+        start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
         blurImage = image.filter(ImageFilter.GaussianBlur(20))
+        end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+        res = (end - start) / 1_000_000
+        print(f"blur took {res}ms")
+
+        start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
         blurImage.save(f'images/blur/{self.id}_{image_file}')
+        end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+        res = (end - start) / 1_000_000
+        print(f"save took {res}ms")
 
         return image_file
+
+class collector():
+    def svc(self, *args):
+        return args
 
 def build_farm(images_path, nworkers, use_processes = True, use_subinterpreters = False):
     farm = FFFarm(use_subinterpreters)
@@ -51,6 +74,13 @@ def build_farm(images_path, nworkers, use_processes = True, use_subinterpreters 
         farm.add_workers_process(w_lis)
     else:
         farm.add_workers(w_lis)
+    
+    # add collector
+    c = collector()
+    if use_processes:
+        farm.add_collector_process(c)
+    else:
+        farm.add_collector(c)
 
     return farm
 
@@ -99,9 +129,26 @@ if __name__ == "__main__":
         print(f"sequential = {res}ms")
     else:
         def blur_filter(img):
+            start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
             image = Image.open(f'images/{img}')
+            end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+            res = (end - start) / 1_000_000
+            print(f"read took {res}ms")
+
+            start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
             blurImage = image.filter(ImageFilter.GaussianBlur(20))
+            end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+            res = (end - start) / 1_000_000
+            print(f"blur took {res}ms")
+
+            start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
             blurImage.save(f'images/blur/proc{id}-{img}')
+            end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+            res = (end - start) / 1_000_000
+            print(f"save took {res}ms")
         
         start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
 

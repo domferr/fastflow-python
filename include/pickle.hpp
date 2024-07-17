@@ -21,7 +21,7 @@ public:
     }
 
     PyObject* pickle_bytes(PyObject* object, int protocol = 5) {
-        PyObject* protocol_obj = PyLong_FromLong(protocol);
+        PyObject* protocol_obj = PyLong_FromLong(0);
         PyObject* decoded_bytes = PyObject_CallFunctionObjArgs(pkl_dump_func, object, protocol_obj, nullptr);
         Py_DECREF(protocol_obj);
         return decoded_bytes;
@@ -33,8 +33,8 @@ public:
 
     std::string pickle(PyObject* object, int protocol = 5) {
         PyObject* decoded_bytes = pickle_bytes(object);
-
-        Py_ssize_t len;
+        std::string str = PyBytes_AsString(decoded_bytes);
+        /*Py_ssize_t len;
         char *res = NULL;
         int err = PyBytes_AsStringAndSize(decoded_bytes, &res, &len);
         if (err < 0) return NULL;
@@ -42,12 +42,13 @@ public:
         std::string str;
         str.assign(res, len);
 
-        Py_DECREF(decoded_bytes);
+        Py_DECREF(decoded_bytes);*/
         return str;
     }
 
     PyObject* unpickle(std::string &str) {
-        PyObject* pickled_bytes = PyBytes_FromStringAndSize(str.c_str(), str.length());
+        PyObject* pickled_bytes = PyBytes_FromString(str.c_str());
+        //PyObject* pickled_bytes = PyBytes_FromStringAndSize(str.c_str(), str.length());
         PyObject* obj = unpickle_bytes(pickled_bytes);
         Py_DECREF(pickled_bytes);
         return obj;
