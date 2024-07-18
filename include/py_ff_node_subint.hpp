@@ -155,7 +155,7 @@ for [k, v] in glb:
         
         PyObject* py_args = arg == NULL ? nullptr:pickl->unpickle_bytes(pickled_bytes);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
-        if (pickled_bytes) Py_DECREF(pickled_bytes);
+        //if (pickled_bytes) Py_DECREF(pickled_bytes);
         
         PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
@@ -165,9 +165,9 @@ for [k, v] in glb:
             return NULL;
         }
 
-        auto pickled_result_bytes = pickl->pickle_bytes(py_result, 5);
+        auto pickled_result_bytes = pickl->pickle_bytes(py_result);
         CHECK_ERROR_THEN("pickle result failure: ", return NULL;)
-        Py_INCREF(pickled_result_bytes);
+        //Py_INCREF(pickled_result_bytes);
         
         auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
         LOG("svc time " << svc_time_ms << "ms");

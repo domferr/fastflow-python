@@ -10,55 +10,58 @@
 #include "pickle.hpp"
 #include "log.hpp"
 
-#define handleError(msg, then) do { if (errno < 0) { perror(msg); } else { LOG(msg": errno == 0, fd closed\n"); } then; } while(0)
+#define handleError(msg, then) do { if (errno < 0) { perror(msg); } else { LOG(msg": errno == 0, fd closed" << std::endl); } then; } while(0)
 
-int sendMessage(int read_fd, int send_fd, std::string &data) {
+#define MESSAGE_TYPE_RESPONSE '1'
+#define MESSAGE_TYPE_REMOTE_FUNCTION_CALL '2'
+#define MESSAGE_TYPE_ACK '3'
+
+struct Message {
+    char type;
+    std::string data;
+    std::string f_name;
+};
+
+int sendMessage(int read_fd, int send_fd, const Message& message) {
+    // send type
+    if (write(send_fd, &message.type, sizeof(message.type)) == -1) {
+        handleError("write type", return -1);
+    }
+
     // send data
-    uint32_t dataSize = data.length();
+    uint32_t dataSize = message.data.length();
     if (write(send_fd, &dataSize, sizeof(dataSize)) == -1) {
         handleError("write data size", return -1);
     }
-    if (dataSize > 0 && writen(send_fd, data.c_str(), dataSize) == -1) {
+    if (dataSize > 0 && writen(send_fd, message.data.c_str(), dataSize) == -1) {
         handleError("write data", return -1);
     }
 
-    char ack; 
-    int err = read(read_fd, &ack, sizeof(ack)); 
+    // send f_name
+    uint32_t fnameSize = message.f_name.size();
+    if (write(send_fd, &fnameSize, sizeof(fnameSize)) == -1) {
+        handleError("write f_name size", return -1);
+    }
+
+    if (fnameSize > 0 && writen(send_fd, message.f_name.c_str(), fnameSize) == -1) {
+        handleError("write f_name", return -1);
+    }
+
+    int dummy; 
+    int err = read(read_fd, &dummy, sizeof(dummy)); 
     if (err <= 0) handleError("error receiving ACK", return err);
 
     return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
 }
 
-int sendMessage(int read_fd, int send_fd, std::string &data, std::string &optional) {
-    // send data
-    uint32_t dataSize = data.length();
-    if (write(send_fd, &dataSize, sizeof(dataSize)) == -1) {
-        handleError("write data size", return -1);
-    }
-    if (dataSize > 0 && writen(send_fd, data.c_str(), dataSize) == -1) {
-        handleError("write data", return -1);
-    }
+int receiveMessage(int read_fd, int send_fd, Message& message) {
+    // recv type
+    int res = read(read_fd, &message.type, sizeof(message.type));
+    if (res <= 0) handleError("read type", return res);
 
-    // send optional
-    uint32_t optionalSize = data.length();
-    if (write(send_fd, &optionalSize, sizeof(optionalSize)) == -1) {
-        handleError("write optional data size", return -1);
-    }
-    if (optionalSize > 0 && writen(send_fd, optional.c_str(), optionalSize) == -1) {
-        handleError("write optional data", return -1);
-    }
-
-    char ack; 
-    int err = read(read_fd, &ack, sizeof(ack)); 
-    if (err <= 0) handleError("error receiving ACK", return err);
-
-    return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
-}
-
-int receiveMessage(int read_fd, int send_fd, std::string *data) {
     // recv data
     uint32_t dataSize;
-    int res = read(read_fd, &dataSize, sizeof(dataSize));
+    res = read(read_fd, &dataSize, sizeof(dataSize));
     if (res <= 0) handleError("read data size", return res);
     char* bufferData = new char[dataSize + 1];
     if (dataSize > 0) {
@@ -67,77 +70,35 @@ int receiveMessage(int read_fd, int send_fd, std::string *data) {
     }
     
     bufferData[dataSize] = '\0';
-    data->assign(bufferData, dataSize);
+    message.data = std::string(bufferData);
+    message.data.assign(bufferData, dataSize);
     delete[] bufferData;
+    
+    // recv f_name
+    uint32_t fnameSize;
+    res = read(read_fd, &fnameSize, sizeof(fnameSize));
+    if (res <= 0) handleError("read fname size", return res);
 
-    char ack = '#'; 
-    res = write(send_fd, &ack, sizeof(ack)); 
-    if (res == -1) handleError("error sending ACK", return res);
-
-    return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
-}
-
-int receiveMessage(int read_fd, int send_fd, std::string &data) {
-    // recv data
-    uint32_t dataSize;
-    int res = read(read_fd, &dataSize, sizeof(dataSize));
-    if (res <= 0) handleError("read data size", return res);
-    char* bufferData = new char[dataSize + 1];
-    if (dataSize > 0) {
-        res = readn(read_fd, bufferData, dataSize);
-        if (res <= 0) handleError("read data", return res);
+    char* bufferFname = new char[fnameSize + 1];
+    if (fnameSize > 0) {
+        res = readn(read_fd, bufferFname, fnameSize);
+        if (res <= 0) handleError("read fname", return res);
     }
     
-    bufferData[dataSize] = '\0';
-    data.assign(bufferData, dataSize);
-    delete[] bufferData;
+    bufferFname[fnameSize] = '\0';
+    message.f_name = std::string(bufferFname);
+    delete[] bufferFname;
 
-    // send ack
-    char ack = '#'; 
-    res = write(send_fd, &ack, sizeof(ack)); 
-    if (res == -1) handleError("error sending ACK", return res);
-
-    return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
-}
-
-int receiveMessage(int read_fd, int send_fd, std::string &data, std::string &optional) {
-    // recv data
-    uint32_t dataSize;
-    int res = read(read_fd, &dataSize, sizeof(dataSize));
-    if (res <= 0) handleError("read data size", return res);
-    char* bufferData = new char[dataSize + 1];
-    if (dataSize > 0) {
-        res = readn(read_fd, bufferData, dataSize);
-        if (res <= 0) handleError("read data", return res);
-    }
-    
-    bufferData[dataSize] = '\0';
-    data.assign(bufferData, dataSize);
-    delete[] bufferData;
-
-    // recv optional
-    uint32_t optionalSize;
-    res = read(read_fd, &optionalSize, sizeof(optionalSize));
-    if (res <= 0) handleError("read optional data size", return res);
-    char* bufferOptData = new char[optionalSize + 1];
-    if (optionalSize > 0) {
-        res = readn(read_fd, bufferOptData, optionalSize);
-        if (res <= 0) handleError("read optional data", return res);
-    }
-    
-    bufferOptData[optionalSize] = '\0';
-    optional.assign(bufferOptData, optionalSize);
-    delete[] bufferOptData;
-
-    // send ack
-    char ack = '#'; 
-    res = write(send_fd, &ack, sizeof(ack)); 
+    int dummy = 17; 
+    res = write(send_fd, &dummy, sizeof(dummy)); 
     if (res == -1) handleError("error sending ACK", return res);
 
     return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
 }
 
 void process_body(int read_fd, int send_fd) {
+    Message message;
+
     // Load pickling/unpickling functions
     pickling pickl;
 
@@ -152,30 +113,27 @@ void process_body(int read_fd, int send_fd) {
     };
 
     CHECK_ERROR_THEN("[child] load pickle/unpickle failure: ", cleanup_exit();)
-
-    std::string data;
-    std::string f_name;
-
+    
     // receive serialized node
-    int err = receiveMessage(read_fd, send_fd, data);
+    int err = receiveMessage(read_fd, send_fd, message);
     if (err <= 0) handleError("[child] read serialized node", cleanup_exit());
     LOG("[child] read serialized node");
 
     // deserialize Python node
-    auto node = pickl.unpickle(data);
+    auto node = pickl.unpickle(message.data);
     CHECK_ERROR_THEN("[child] unpickle node failure: ", cleanup_exit();)
     LOG("[child] deserialized node");
 
     while(err > 0) {
-        err = receiveMessage(read_fd, send_fd, data, f_name);
+        err = receiveMessage(read_fd, send_fd, message);
         if (err < 0) handleError("[child] read next", cleanup_exit());
 
         if (err > 0) {
             // deserialize data
-            auto py_args_tuple = pickl.unpickle(data);
+            auto py_args_tuple = pickl.unpickle(message.data);
             CHECK_ERROR_THEN("[child] deserialize data failure: ", cleanup_exit();)
             // call function
-            PyObject *py_func = PyObject_GetAttrString(node, f_name.c_str());
+            PyObject *py_func = PyObject_GetAttrString(node, message.f_name.c_str());
             CHECK_ERROR_THEN("[child] get node function: ", cleanup_exit();)
 
             if (py_func) {
@@ -188,7 +146,7 @@ void process_body(int read_fd, int send_fd) {
                 CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
 
                 // send response
-                err = sendMessage(read_fd, send_fd, result_str);
+                err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result_str, .f_name = "" });
                 if (err <= 0) handleError("[child] send response", cleanup_exit());
                 LOG("[child] sent response");
 
@@ -227,7 +185,7 @@ public:
 
         has_svc_init = PyObject_HasAttrString(node, "svc_init") == 1;
         has_svc_end = PyObject_HasAttrString(node, "svc_end") == 1;
-        
+
         // Load pickling/unpickling functions
         pickling pickl;
         CHECK_ERROR_THEN("load pickle and unpickle failure: ", return -1;)
@@ -282,19 +240,19 @@ public:
                 send_fd = mainToChildFD[1];
                 read_fd = childToMainFD[0];
 
-                int err = sendMessage(read_fd, send_fd, node_str);
+                int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = node_str, .f_name = "" });
                 if (err <= 0) handleError("send serialized node", returnValue = -1);
 
                 if (err > 0 && has_svc_init) {
+                    Message response;
                     auto empty_tuple = std::string(EMPTY_TUPLE_STR);
-                    std::string response;
                     int err = remote_function_call(empty_tuple, "svc_init", response);
                     if (err <= 0) {
                         handleError("read result of remote call of svc_init", );
                     } else {
                         // Hold the main GIL
                         PyEval_RestoreThread(tstate);
-                        PyObject *svc_init_result = pickl.unpickle(response);
+                        PyObject *svc_init_result = pickl.unpickle(response.data);
                         CHECK_ERROR_THEN("unpickle svc_init_result failure: ", returnValue = -1;)
                         returnValue = 0;
                         // if we are here, then the GIL was acquired before
@@ -321,19 +279,20 @@ public:
         auto svc_start_time = std::chrono::system_clock::now(); 
         std::string serialized_data = arg == NULL ? EMPTY_TUPLE_STR:*reinterpret_cast<std::string*>(arg);
         
-        std::string response;
+        Message response;
         int err = remote_function_call(serialized_data, "svc", response);
         if (err <= 0) handleError("remote call of svc", );
         else {
             auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
             LOG("serialized size = " << serialized_data->size() << ", svc time " << svc_time_ms << "ms");
-            if (response == none_str) return NULL;
+            if (response.data.compare(none_str) == 0) {
+                return NULL;
+            }
 
-            return new std::string(response);
+            return new std::string(response.data);
         }
 
         LOG("an error occurred, abort.");
-
         return NULL;
     }
 
@@ -350,13 +309,16 @@ public:
         send_fd = -1;
     }
 
-    int remote_function_call(std::string &data, std::string f_name, std::string &response) {
+    int remote_function_call(std::string &data, const char *f_name, Message &response) {
         if (send_fd == -1 || read_fd == -1) {
             // they are -1 if an error occurred during svc_init or svc
             return -1;
         }
         
-        int err = sendMessage(read_fd, send_fd, data, f_name);
+        int err = sendMessage(read_fd, send_fd, { 
+            .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, 
+            .data = data, 
+            .f_name = f_name });
         if (err <= 0) return err;
 
         return receiveMessage(read_fd, send_fd, response);
@@ -366,7 +328,7 @@ public:
         auto svc_end_start_time = std::chrono::system_clock::now();
 
         if (has_svc_end) {
-            std::string response;
+            Message response;
             auto empty_tuple = std::string(EMPTY_TUPLE_STR);
             int err = remote_function_call(empty_tuple, "svc_end", response);
             if (err <= 0) handleError("read result of remote call of svc_end", );
