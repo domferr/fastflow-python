@@ -8,6 +8,34 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import wait
 
+def blur_filter(img):
+    image = Image.open(f'images/{img}')
+    blurImage = image.filter(ImageFilter.GaussianBlur(20))
+    blurImage.save(f'images/blur/{img}')
+    
+    """print(f"worker {self.id} -> {image_file}")
+
+    start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+    image = Image.open(f'images/{image_file}')
+    end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+    res = (end - start) / 1_000_000
+    print(f"read took {res}ms")
+
+    start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+    blurImage = image.filter(ImageFilter.GaussianBlur(20))
+    end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+    res = (end - start) / 1_000_000
+    print(f"blur took {res}ms")
+
+    start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+    blurImage.save(f'images/blur/{self.id}_{image_file}')
+    end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+    res = (end - start) / 1_000_000
+    print(f"save took {res}ms")"""
+
 class emitter():
     def __init__(self, images_path):
         self.images_path = images_path
@@ -24,34 +52,8 @@ class worker():
         self.id = id
 
     def svc(self, image_file):
-        print(f"worker {self.id} -> {image_file}")
-
-        start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-        image = Image.open(f'images/{image_file}')
-        end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-
-        res = (end - start) / 1_000_000
-        print(f"read took {res}ms")
-
-        start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-        blurImage = image.filter(ImageFilter.GaussianBlur(20))
-        end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-
-        res = (end - start) / 1_000_000
-        print(f"blur took {res}ms")
-
-        start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-        blurImage.save(f'images/blur/{self.id}_{image_file}')
-        end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-
-        res = (end - start) / 1_000_000
-        print(f"save took {res}ms")
-
+        blur_filter(image_file)
         return image_file
-
-class collector():
-    def svc(self, *args):
-        return args
 
 def build_farm(images_path, nworkers, use_processes = True, use_subinterpreters = False):
     farm = FFFarm(use_subinterpreters)
@@ -74,13 +76,6 @@ def build_farm(images_path, nworkers, use_processes = True, use_subinterpreters 
         farm.add_workers_process(w_lis)
     else:
         farm.add_workers(w_lis)
-    
-    # add collector
-    c = collector()
-    if use_processes:
-        farm.add_collector_process(c)
-    else:
-        farm.add_collector(c)
 
     return farm
 
@@ -100,7 +95,9 @@ if __name__ == "__main__":
     group.add_argument('-seq', action='store_true', help='Run tasks sequentially')
     args = parser.parse_args()
 
-    images_path = ["wallpaper.png" for _ in range(args.images)]
+    images_path = [f"wallpaper_{i}.png" for i in range(args.images)]
+    for img in images_path:
+        shutil.copy("images/wallpaper.png", f"images/{img}")
 
     if os.path.exists("images/blur"):
         shutil.rmtree("images/blur")
@@ -127,29 +124,7 @@ if __name__ == "__main__":
 
         res = (end - start) / 1_000_000
         print(f"sequential = {res}ms")
-    else:
-        def blur_filter(img):
-            start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-            image = Image.open(f'images/{img}')
-            end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-
-            res = (end - start) / 1_000_000
-            print(f"read took {res}ms")
-
-            start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-            blurImage = image.filter(ImageFilter.GaussianBlur(20))
-            end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-
-            res = (end - start) / 1_000_000
-            print(f"blur took {res}ms")
-
-            start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-            blurImage.save(f'images/blur/proc{id}-{img}')
-            end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-
-            res = (end - start) / 1_000_000
-            print(f"save took {res}ms")
-        
+    else:        
         start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
 
         with ProcessPoolExecutor(max_workers=args.workers) as exe:
