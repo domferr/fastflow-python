@@ -7,7 +7,7 @@
 #include <chrono>
 #include "error_macros.hpp"
 #include "pickle.hpp"
-#include "log.hpp"
+#include "debugging.hpp"
 
 class py_ff_node_subint: public ff::ff_node {
 public:
@@ -22,7 +22,7 @@ public:
     }
 
     int svc_init() override {
-        auto svc_init_start_time = std::chrono::system_clock::now();
+        TIMESTART(svc_init_start_time);
         // associate a new thread state with ff_node's thread
         PyThreadState* cached_tstate = tstate;
         tstate = PyThreadState_New(cached_tstate->interp);
@@ -132,8 +132,7 @@ for [k, v] in glb:
 
         if (returnValue != 0) cleanup();
 
-        auto svc_init_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_init_start_time).count();
-        LOG("svc_init time " << svc_init_time_ms << "ms");
+        LOGELAPSED("svc_init time ", svc_init_start_time);
         return returnValue;
     }
 
@@ -150,7 +149,7 @@ for [k, v] in glb:
         Py_INCREF(py_result);
         return (void*) py_result;*/
         
-        auto svc_start_time = std::chrono::system_clock::now();  
+        TIMESTART(svc_start_time);
         PyObject* pickled_bytes = arg == NULL ? NULL:reinterpret_cast<PyObject*>(arg);
         
         PyObject* py_args = arg == NULL ? nullptr:pickl->unpickle_bytes(pickled_bytes);
@@ -169,8 +168,7 @@ for [k, v] in glb:
         CHECK_ERROR_THEN("pickle result failure: ", return NULL;)
         //Py_INCREF(pickled_result_bytes);
         
-        auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
-        LOG("svc time " << svc_time_ms << "ms");
+        LOGELAPSED("svc time ", svc_start_time);
         
         return (void*) pickled_result_bytes;
     }
@@ -189,7 +187,7 @@ for [k, v] in glb:
     }
 
     void svc_end() override {
-        auto svc_end_start_time = std::chrono::system_clock::now();
+        TIMESTART(svc_end_start_time);
         
         if (PyObject_HasAttrString(node, "svc_end") == 1) {
             PyObject* svc_end_func = PyObject_GetAttrString(node, "svc_end");
@@ -202,8 +200,7 @@ for [k, v] in glb:
         }
         cleanup();
 
-        auto svc_end_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_end_start_time).count();
-        LOG("svc_end time " << svc_end_time_ms << "ms");
+        LOGELAPSED("svc_end time ", svc_end_start_time);
     }
 
 private:

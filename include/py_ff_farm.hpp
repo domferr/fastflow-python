@@ -98,7 +98,7 @@ PyObject* py_ff_farm_ffTime(PyObject *self, PyObject *args)
     return PyFloat_FromDouble(val);
 }
 
-PyDoc_STRVAR(py_ff_farm_run_and_wait_end_doc, "Run the pipeline and wait for the end");
+PyDoc_STRVAR(py_ff_farm_run_and_wait_end_doc, "Run the farm and wait for the end");
 
 PyObject* py_ff_farm_run_and_wait_end(PyObject *self, PyObject *args)
 {
@@ -235,7 +235,6 @@ PyObject* py_ff_farm_blocking_mode(PyObject *self, PyObject *arg)
     PyObject* bool_arg = PyBool_Check(arg) == 1 ? arg:Py_False;
     bool enable = PyObject_IsTrue(bool_arg) == 1;
     _self->farm->blocking_mode(enable);
-    std::cout << "blocking mode set to " << enable << std::endl;
 
     return Py_None;
 }

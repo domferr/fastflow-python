@@ -8,7 +8,7 @@
 #include <sys/wait.h>
 #include "error_macros.hpp"
 #include "pickle.hpp"
-#include "log.hpp"
+#include "debugging.hpp"
 
 #define handleError(msg, then) do { if (errno < 0) { perror(msg); } else { LOG(msg": errno == 0, fd closed" << std::endl); } then; } while(0)
 
@@ -175,7 +175,7 @@ public:
     }
     
     int svc_init() override {
-        auto svc_init_start_time = std::chrono::system_clock::now();
+        TIMESTART(svc_init_start_time);
         // associate a new thread state with ff_node's thread
         PyThreadState* cached_tstate = tstate;
         tstate = PyThreadState_New(cached_tstate->interp);
@@ -270,21 +270,19 @@ public:
         }
 
         // from here the GIL is NOT acquired
-        auto svc_init_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_init_start_time).count();
-        LOG("svc_init time " << svc_init_time_ms << "ms");
+        LOGELAPSED("svc_init time ", svc_init_start_time);
         return returnValue;
     }
 
     void * svc(void *arg) override {
-        auto svc_start_time = std::chrono::system_clock::now(); 
+        TIMESTART(svc_start_time);
         std::string serialized_data = arg == NULL ? EMPTY_TUPLE_STR:*reinterpret_cast<std::string*>(arg);
         
         Message response;
         int err = remote_function_call(serialized_data, "svc", response);
         if (err <= 0) handleError("remote call of svc", );
         else {
-            auto svc_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_start_time).count();
-            LOG("serialized size = " << serialized_data->size() << ", svc time " << svc_time_ms << "ms");
+            LOGELAPSED("svc time ", svc_start_time);
             if (response.data.compare(none_str) == 0) {
                 return NULL;
             }
@@ -325,7 +323,7 @@ public:
     }
 
     void svc_end() override {
-        auto svc_end_start_time = std::chrono::system_clock::now();
+        TIMESTART(svc_end_start_time);
 
         if (has_svc_end) {
             Message response;
@@ -346,8 +344,7 @@ public:
         PyEval_RestoreThread(tstate);
         cleanup();
 
-        auto svc_end_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - svc_end_start_time).count();
-        LOG("svc_end time " << svc_end_time_ms << "ms");
+        LOGELAPSED("svc_end time ", svc_end_start_time);
     }
 
 private:
