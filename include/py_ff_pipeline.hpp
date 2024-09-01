@@ -162,6 +162,7 @@ static struct PyMemberDef py_ff_pipeline_members[] = {
     {NULL} /* Sentinel */
 };
 
+/*
 static PyType_Slot py_ff_pipeline_slots[] = {
     {Py_tp_new, (void*)py_ff_pipeline_new},
     {Py_tp_init, (void*)py_ff_pipeline_init},
@@ -177,6 +178,20 @@ static PyType_Spec spec_py_ff_pipeline = {
     0,                                          // itemsize
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   // flags
     py_ff_pipeline_slots                               // slots
+};*/
+
+static PyTypeObject py_ff_pipeline_type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "fastflow_module.FFPipeline",
+    .tp_basicsize = sizeof(py_ff_pipeline_object) + sizeof(ff::ff_pipeline),
+    .tp_itemsize = 0,
+    .tp_dealloc = (destructor) py_ff_pipeline_dealloc,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc = PyDoc_STR("A pipeline"),
+    .tp_methods = py_ff_pipeline_methods,
+    .tp_members = py_ff_pipeline_members,
+    .tp_init = (initproc) py_ff_pipeline_init,
+    .tp_new = py_ff_pipeline_new,
 };
 
 #endif //PY_FF_PIPELINE

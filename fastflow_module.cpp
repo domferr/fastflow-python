@@ -24,16 +24,14 @@ PyModuleDef moduledef = {
 PyMODINIT_FUNC
 PyInit_fastflow_module(void) {
     PyObject* module = PyModule_Create(&moduledef);
+    if (module == NULL)
+        return NULL;
     
     // add FFPipeline
-    PyObject *py_ff_pipeline = PyType_FromSpec(&spec_py_ff_pipeline);
-    if (py_ff_pipeline == NULL){
+    if (PyType_Ready(&py_ff_pipeline_type) < 0)
         return NULL;
-    }
-    Py_INCREF(py_ff_pipeline);
     
-    if(PyModule_AddObject(module, "FFPipeline", py_ff_pipeline) < 0){
-        Py_DECREF(py_ff_pipeline);
+    if (PyModule_AddObject(module, "FFPipeline", (PyObject *) &py_ff_pipeline_type) < 0) {
         Py_DECREF(module);
         return NULL;
     }
@@ -45,7 +43,7 @@ PyInit_fastflow_module(void) {
     }
     Py_INCREF(py_ff_farm);
     
-    if(PyModule_AddObject(module, "FFFarm", py_ff_farm) < 0){
+    if (PyModule_AddObject(module, "FFFarm", py_ff_farm) < 0){
         Py_DECREF(py_ff_farm);
         Py_DECREF(module);
         return NULL;
@@ -58,7 +56,7 @@ PyInit_fastflow_module(void) {
     }
     Py_INCREF(py_ff_a2a);
     
-    if(PyModule_AddObject(module, "FFAllToAll", py_ff_a2a) < 0){
+    if (PyModule_AddObject(module, "FFAllToAll", py_ff_a2a) < 0){
         Py_DECREF(py_ff_a2a);
         Py_DECREF(module);
         return NULL;

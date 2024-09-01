@@ -14,6 +14,7 @@
 #include "py_ff_node.hpp"
 #include "py_ff_node_subint.hpp"
 #include "py_ff_node_process.hpp"
+#include <ff/multinode.hpp>
 
 typedef struct {
     PyObject_HEAD
@@ -129,14 +130,26 @@ PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *arg)
     PyObject* item;
     while ((item = PyIter_Next(iterator))) {
         ff::ff_node* node;
-        if (_self->use_subinterpreters) node = new py_ff_node_subint(item);
-        else node = new py_ff_node(item);
+        // we may have a pipeline as item
+        if (PyObject_TypeCheck(item, &py_ff_pipeline_type) != 0) {
+            py_ff_pipeline_object* _pipe = reinterpret_cast<py_ff_pipeline_object*>(item);
+            if (!_pipe->pipeline->isMultiOutput()) {
+                ff::ff_node* last_stage = _pipe->pipeline->get_laststage();
+                ff::ff_node* new_node = new ff::internal_mo_transformer(last_stage, false);
+                _pipe->pipeline->change_node(last_stage, new_node, true, true);
+            }
+            node = _pipe->pipeline;
+        } else if (_self->use_subinterpreters) {
+            node = new py_ff_node_subint(item);
+        } else {
+            node = new py_ff_node(item);
+        }
         set.push_back(node);
     }
     Py_DECREF(iterator);
 
     int ondemand = 0;
-    int val = _self->a2a->add_firstset(set, ondemand, true);
+    int val = _self->a2a->add_firstset(set, ondemand, false);
     return PyLong_FromLong(val);
 }
 
@@ -153,12 +166,25 @@ PyObject* py_ff_a2a_add_firstset_process(PyObject *self, PyObject *arg)
     PyObject* iterator = PyObject_GetIter(arg);
     PyObject* item;
     while ((item = PyIter_Next(iterator))) {
-        set.push_back(new py_ff_node_process(item));
+        ff::ff_node* node;
+        // we may have a pipeline as item
+        if (PyObject_TypeCheck(item, &py_ff_pipeline_type) != 0) {
+            py_ff_pipeline_object* _pipe = reinterpret_cast<py_ff_pipeline_object*>(item);
+            if (!_pipe->pipeline->isMultiOutput()) {
+                auto last_stage = _pipe->pipeline->get_laststage();
+                auto new_node = new ff::internal_mo_transformer(last_stage, false);
+                _pipe->pipeline->change_node(last_stage, new_node, true, true);
+            }
+            node = _pipe->pipeline;
+        } else {
+            node = new py_ff_node_process(item);
+        }
+        set.push_back(node);
     }
     Py_DECREF(iterator);
 
     int ondemand = 0;
-    int val = _self->a2a->add_firstset(set, ondemand, true);
+    int val = _self->a2a->add_firstset(set, ondemand, false);
     return PyLong_FromLong(val);
 }
 
