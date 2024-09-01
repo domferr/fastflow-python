@@ -80,15 +80,12 @@ class collector():
     def svc_end(self):
         print(f'[collector] svc_end was called')
 
-def build_farm(n_tasks, task_ms, nworkers, data_sample, use_processes = True, use_subinterpreters = False):
+def build_farm(n_tasks, task_ms, nworkers, data_sample, use_subinterpreters = False, use_main_thread = False):
     farm = FFFarm(use_subinterpreters)
 
     # emitter
     em = emitter(data_sample, n_tasks)
-    if use_processes:
-        farm.add_emitter_process(em)
-    else:
-        farm.add_emitter(em)
+    farm.add_emitter(em, use_main_thread = use_main_thread)
 
     # build workers list
     w_lis = []
@@ -97,23 +94,17 @@ def build_farm(n_tasks, task_ms, nworkers, data_sample, use_processes = True, us
         w_lis.append(w)
     
     # add workers
-    if use_processes:
-        farm.add_workers_process(w_lis)
-    else:
-        farm.add_workers(w_lis)
+    farm.add_workers(w_lis, use_main_thread = use_main_thread)
 
     # collector
     coll = collector()
-    if use_processes:
-        farm.add_collector_process(coll)
-    else:
-        farm.add_collector(coll)
+    farm.add_collector(coll, use_main_thread = use_main_thread)
 
     return farm
 
-def run_farm(n_tasks, task_ms, nworkers, data_sample, use_processes = False, use_subinterpreters = False, blocking_mode = None, no_mapping = False):
+def run_farm(n_tasks, task_ms, nworkers, data_sample, use_subinterpreters = False, blocking_mode = None, no_mapping = False, use_main_thread = False):
     print(f"run farm of {nworkers} workers and {n_tasks} tasks", file=sys.stderr)
-    farm = build_farm(n_tasks, task_ms, nworkers, data_sample, use_processes, use_subinterpreters)
+    farm = build_farm(n_tasks, task_ms, nworkers, data_sample, use_subinterpreters, use_main_thread)
     if blocking_mode is not None:
         farm.blocking_mode(blocking_mode)
     if no_mapping:
@@ -149,7 +140,7 @@ if __name__ == "__main__":
 
     if args.proc:
         processes = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = True, use_subinterpreters = False, blocking_mode = args.blocking_mode, no_mapping = args.no_mapping)
+        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_subinterpreters = False, blocking_mode = args.blocking_mode, no_mapping = args.no_mapping)
         print(f"done in {res}ms")
         processes[0].append(args.workers) # x
         processes[1].append(res) # y
@@ -157,7 +148,7 @@ if __name__ == "__main__":
         print_res("processes", res, args)
     elif args.sub:
         subinterpreters = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = False, use_subinterpreters = True, blocking_mode = args.blocking_mode, no_mapping = args.no_mapping)
+        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_subinterpreters = True, blocking_mode = args.blocking_mode, no_mapping = args.no_mapping)
         print(f"done in {res}ms")
         subinterpreters[0].append(args.workers) # x
         subinterpreters[1].append(res) # y
@@ -165,7 +156,7 @@ if __name__ == "__main__":
         print_res("subinterpreters", res, args)
     else:
         standard = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_processes = False, use_subinterpreters = False)
+        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_subinterpreters = False, use_main_thread = True)
         print(f"done in {res}ms")
         standard[0].append(args.workers) # x
         standard[1].append(res) # y

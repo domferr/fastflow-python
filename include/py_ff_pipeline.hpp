@@ -11,9 +11,7 @@
 #include <structmember.h>
 #include <ff/ff.hpp>
 #include <iostream>
-#include "py_ff_node.hpp"
-#include "py_ff_node_subint.hpp"
-#include "py_ff_node_process.hpp"
+#include "node_utils.hpp"
 
 typedef struct {
     PyObject_HEAD
@@ -39,7 +37,8 @@ int py_ff_pipeline_init(PyObject *self, PyObject *args, PyObject *kwds)
 
     PyObject* bool_arg = Py_True;
     if (!PyArg_ParseTuple(args, "|O", &bool_arg)) {
-        std::cerr << "error parsing tuple" << std::endl;
+        PyErr_SetString(PyExc_RuntimeError, "Error parsing tuple");
+        return -1;
     } else if (bool_arg != nullptr && !PyBool_Check(bool_arg)) {
         PyErr_Format(PyExc_TypeError, "A bool is required (got type %s)",
                      Py_TYPE(bool_arg)->tp_name);
@@ -117,29 +116,14 @@ PyObject* py_ff_pipeline_run_and_wait_end(PyObject *self, PyObject *args)
 
 PyDoc_STRVAR(py_ff_pipeline_add_stage_doc, "Add a stage to the pipeline");
 
-PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *arg)
+PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *args, PyObject *kwds)
 {
     assert(self);
 
     py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
-    
-    ff::ff_node* node;
-    if (_self->use_subinterpreters) node = new py_ff_node_subint(arg);
-    else node = new py_ff_node(arg);
 
-    int val = _self->pipeline->add_stage(node, true);
-    return PyLong_FromLong(val);
-}
-
-PyDoc_STRVAR(py_ff_pipeline_add_stage_process_doc, "Add a stage to the pipeline that runs in another process");
-
-PyObject* py_ff_pipeline_add_stage_process(PyObject *self, PyObject *arg)
-{
-    assert(self);
-
-    py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
-    
-    ff::ff_node* node = new py_ff_node_process(arg);
+    ff::ff_node* node = args_to_node(args, kwds, _self->use_subinterpreters);
+    if (node == NULL) return NULL;
 
     int val = _self->pipeline->add_stage(node, true);
     return PyLong_FromLong(val);
@@ -151,9 +135,7 @@ static PyMethodDef py_ff_pipeline_methods[] = {
     { "run_and_wait_end", (PyCFunction) py_ff_pipeline_run_and_wait_end, 
         METH_NOARGS, py_ff_pipeline_run_and_wait_end_doc },
     { "add_stage",        (PyCFunction) py_ff_pipeline_add_stage, 
-        METH_O, py_ff_pipeline_add_stage_doc },
-    { "add_stage_process",        (PyCFunction) py_ff_pipeline_add_stage_process, 
-        METH_O, py_ff_pipeline_add_stage_process_doc },
+        METH_VARARGS | METH_KEYWORDS, py_ff_pipeline_add_stage_doc },
     {NULL, NULL} /* Sentinel */
 };
 

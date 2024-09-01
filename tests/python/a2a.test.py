@@ -31,7 +31,7 @@ class sink():
         print(lis)
         return 0
 
-def run_test(use_subinterpreters = True, use_processes = False):
+def run_test(use_subinterpreters = True):
     a2a = FFAllToAll(use_subinterpreters)
     first_stage_size = 4
     second_stage_size = 3
@@ -40,21 +40,14 @@ def run_test(use_subinterpreters = True, use_processes = False):
     # build second stages
     second_lis = [sink(i+1) for i in range(second_stage_size)]
     # add first stages
-    if use_processes:
-        a2a.add_firstset_process(first_lis)
-    else:
-        a2a.add_firstset(first_lis)
-    
+    a2a.add_firstset(first_lis)
     # add second stages
-    if use_processes:
-        a2a.add_secondset_process(second_lis)
-    else:
-        a2a.add_secondset(second_lis)
+    a2a.add_secondset(second_lis)
     a2a.run_and_wait_end()
 
 if __name__ == "__main__":
     print("Subinterpreters")
-    run_test(True, False)
+    run_test(use_subinterpreters = True)
     print()
     print("Processes")
-    run_test(False, True)
+    run_test(use_subinterpreters = False)

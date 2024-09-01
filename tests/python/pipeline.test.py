@@ -25,33 +25,21 @@ class sink():
         print(lis)
         return 0
 
-def run_test(use_subinterpreters = True, use_processes = False):
+def run_test(use_subinterpreters, use_main_thread = True):
     pipe = FFPipeline(use_subinterpreters)
     sourcenode = source()
     st1 = stage('st1')
     st2 = stage('st2')
     sinknode = sink()
-    if use_processes:
-        pipe.add_stage_process(sourcenode)
-    else:
-        pipe.add_stage(sourcenode)
-    if use_processes:
-        pipe.add_stage_process(st1)
-    else:
-        pipe.add_stage(st1)
-    if use_processes:
-        pipe.add_stage_process(st2)
-    else:
-        pipe.add_stage(st2)
-    if use_processes:
-        pipe.add_stage_process(sinknode)
-    else:
-        pipe.add_stage(sinknode)
+    pipe.add_stage(sourcenode, use_main_thread=use_main_thread)
+    pipe.add_stage(st1, use_main_thread=use_main_thread)
+    pipe.add_stage(st2, use_main_thread=use_main_thread)
+    pipe.add_stage(sinknode, use_main_thread=use_main_thread)
     pipe.run_and_wait_end()
 
 if __name__ == "__main__":
     print("Subinterpreters")
-    run_test(True, False)
+    run_test(use_subinterpreters = True)
     print()
     print("Processes")
-    run_test(False, True)
+    run_test(use_subinterpreters = False)

@@ -117,30 +117,14 @@ PyObject* py_ff_farm_run_and_wait_end(PyObject *self, PyObject *args)
 
 PyDoc_STRVAR(py_ff_farm_add_emitter_doc, "Add emitter to the farm");
 
-PyObject* py_ff_farm_add_emitter(PyObject *self, PyObject *arg)
+PyObject* py_ff_farm_add_emitter(PyObject *self, PyObject *args, PyObject *kwds)
 {
     assert(self);
 
     py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
     
-    ff::ff_node* node;
-    if (_self->use_subinterpreters) node = new py_ff_node_subint(arg);
-    else node = new py_ff_node(arg);
-
-    int val = _self->farm->add_emitter(node);
-    _self->farm->cleanup_emitter(true);
-    return PyLong_FromLong(val);
-}
-
-PyDoc_STRVAR(py_ff_farm_add_emitter_process_doc, "Add emitter to the farm that runs in another process");
-
-PyObject* py_ff_farm_add_emitter_process(PyObject *self, PyObject *arg)
-{
-    assert(self);
-
-    py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
-    
-    ff::ff_node* node = new py_ff_node_process(arg);
+    ff::ff_node* node = args_to_node(args, kwds, _self->use_subinterpreters);
+    if (node == NULL) return NULL;
 
     int val = _self->farm->add_emitter(node);
     _self->farm->cleanup_emitter(true);
@@ -149,43 +133,30 @@ PyObject* py_ff_farm_add_emitter_process(PyObject *self, PyObject *arg)
 
 PyDoc_STRVAR(py_ff_farm_add_workers_doc, "Add workers to the farm");
 
-PyObject* py_ff_farm_add_workers(PyObject *self, PyObject *arg)
+PyObject* py_ff_farm_add_workers(PyObject *self, PyObject *args, PyObject *kwds)
 {
     assert(self);
 
     py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
-    
+
+    PyObject *py_nodes = NULL;
+    bool use_main_thread = false;
+    if (parse_args(args, kwds, &py_nodes, &use_main_thread) == -1) return NULL;
+
     std::vector<ff::ff_node*> workers;
     // Iterate over all of the arguments.
-    PyObject* iterator = PyObject_GetIter(arg);
+    PyObject* iterator = PyObject_GetIter(py_nodes);
     PyObject* item;
     while ((item = PyIter_Next(iterator))) {
         ff::ff_node* node;
-        if (_self->use_subinterpreters) node = new py_ff_node_subint(item);
-        else node = new py_ff_node(item);
+        if (_self->use_subinterpreters) {
+            node = new py_ff_node_subint(item);
+        } else if (use_main_thread) {
+            node = new py_ff_node(item);
+        } else {
+            node = new py_ff_node_process(item);
+        }
         workers.push_back(node);
-    }
-    Py_DECREF(iterator);
-
-    int val = _self->farm->add_workers(workers);
-    _self->farm->cleanup_workers(true);
-    return PyLong_FromLong(val);
-}
-
-PyDoc_STRVAR(py_ff_farm_add_workers_process_doc, "Add workers to the farm that run in another process each");
-
-PyObject* py_ff_farm_add_workers_process(PyObject *self, PyObject *arg)
-{
-    assert(self);
-
-    py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
-
-    std::vector<ff::ff_node*> workers;
-    // Iterate over all of the arguments.
-    PyObject* iterator = PyObject_GetIter(arg);
-    PyObject* item;
-    while ((item = PyIter_Next(iterator))) {
-        workers.push_back(new py_ff_node_process(item));
     }
     Py_DECREF(iterator);
 
@@ -196,29 +167,14 @@ PyObject* py_ff_farm_add_workers_process(PyObject *self, PyObject *arg)
 
 PyDoc_STRVAR(py_ff_farm_add_collector_doc, "Add collector to the farm");
 
-PyObject* py_ff_farm_add_collector(PyObject *self, PyObject *arg)
+PyObject* py_ff_farm_add_collector(PyObject *self, PyObject *args, PyObject *kwds)
 {
     assert(self);
 
     py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
     
-    ff::ff_node* node;
-    if (_self->use_subinterpreters) node = new py_ff_node_subint(arg);
-    else node = new py_ff_node(arg);
-
-    int val = _self->farm->add_collector(node, true);
-    return PyLong_FromLong(val);
-}
-
-PyDoc_STRVAR(py_ff_farm_add_collector_process_doc, "Add collector to the farm that runs in another process");
-
-PyObject* py_ff_farm_add_collector_process(PyObject *self, PyObject *arg)
-{
-    assert(self);
-
-    py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
-    
-    ff::ff_node* node = new py_ff_node_process(arg);
+    ff::ff_node* node = args_to_node(args, kwds, _self->use_subinterpreters);
+    if (node == NULL) return NULL;
 
     int val = _self->farm->add_collector(node, true);
     return PyLong_FromLong(val);
@@ -257,17 +213,11 @@ static PyMethodDef py_ff_farm_methods[] = {
     { "run_and_wait_end", (PyCFunction) py_ff_farm_run_and_wait_end, 
         METH_NOARGS, py_ff_farm_run_and_wait_end_doc },
     { "add_workers",      (PyCFunction) py_ff_farm_add_workers, 
-        METH_O, py_ff_farm_add_workers_doc },
-    { "add_workers_process",   (PyCFunction) py_ff_farm_add_workers_process, 
-        METH_O, py_ff_farm_add_workers_process_doc },
+        METH_VARARGS | METH_KEYWORDS, py_ff_farm_add_workers_doc },
     { "add_emitter",      (PyCFunction) py_ff_farm_add_emitter, 
-        METH_O, py_ff_farm_add_emitter_doc },
-    { "add_emitter_process",   (PyCFunction) py_ff_farm_add_emitter_process, 
-        METH_O, py_ff_farm_add_emitter_process_doc },
+        METH_VARARGS | METH_KEYWORDS, py_ff_farm_add_emitter_doc },
     { "add_collector",    (PyCFunction) py_ff_farm_add_collector, 
-        METH_O, py_ff_farm_add_collector_doc },
-    { "add_collector_process", (PyCFunction) py_ff_farm_add_collector_process, 
-        METH_O, py_ff_farm_add_collector_process_doc },
+        METH_VARARGS | METH_KEYWORDS, py_ff_farm_add_collector_doc },
     { "blocking_mode", (PyCFunction) py_ff_farm_blocking_mode, 
         METH_O, py_ff_farm_blocking_mode_doc },
     { "no_mapping", (PyCFunction) py_ff_farm_no_mapping, 

@@ -24,7 +24,7 @@ class sink():
         print(lis)
         return 0
 
-def run_test(use_subinterpreters = True, use_processes = False):
+def run_test(use_subinterpreters = True):
     farm = FFFarm(use_subinterpreters)
     sourcenode = source()
     sinknode = sink()
@@ -32,23 +32,14 @@ def run_test(use_subinterpreters = True, use_processes = False):
     for i in range(6):
         w = worker(f"{i+1}")
         w_lis.append(w)
-    if use_processes:
-        farm.add_emitter_process(sourcenode)
-    else:
-        farm.add_emitter(sourcenode)
-    if use_processes:
-        farm.add_workers_process(w_lis)
-    else:
-        farm.add_workers(w_lis)
-    if use_processes:
-        farm.add_collector_process(sinknode)
-    else:
-        farm.add_collector(sinknode)
+    farm.add_emitter(sourcenode)
+    farm.add_workers(w_lis)
+    farm.add_collector(sinknode)
     farm.run_and_wait_end()
 
 if __name__ == "__main__":
     print("Subinterpreters")
-    run_test(True, False)
+    run_test(use_subinterpreters = True)
     print()
     print("Processes")
-    run_test(False, True)
+    run_test(use_subinterpreters = False)

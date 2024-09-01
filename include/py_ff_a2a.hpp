@@ -118,15 +118,19 @@ PyObject* py_ff_a2a_run_and_wait_end(PyObject *self, PyObject *args)
 
 PyDoc_STRVAR(py_ff_a2a_add_firstset_doc, "Add first set to the a2a");
 
-PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *arg)
+PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *args, PyObject* kwds)
 {
     assert(self);
 
     py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
 
+    PyObject *py_nodes = NULL;
+    bool use_main_thread = false;
+    if (parse_args(args, kwds, &py_nodes, &use_main_thread) == -1) return NULL;
+
     std::vector<ff::ff_node*> set;
-    // Iterate over all of the arguments.
-    PyObject* iterator = PyObject_GetIter(arg);
+    // Iterate over all the arguments
+    PyObject* iterator = PyObject_GetIter(py_nodes);
     PyObject* item;
     while ((item = PyIter_Next(iterator))) {
         ff::ff_node* node;
@@ -141,41 +145,8 @@ PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *arg)
             node = _pipe->pipeline;
         } else if (_self->use_subinterpreters) {
             node = new py_ff_node_subint(item);
-        } else {
+        } else if (use_main_thread) {
             node = new py_ff_node(item);
-        }
-        set.push_back(node);
-    }
-    Py_DECREF(iterator);
-
-    int ondemand = 0;
-    int val = _self->a2a->add_firstset(set, ondemand, false);
-    return PyLong_FromLong(val);
-}
-
-PyDoc_STRVAR(py_ff_a2a_add_firstset_process_doc, "Add first set to the a2a that runs in another process");
-
-PyObject* py_ff_a2a_add_firstset_process(PyObject *self, PyObject *arg)
-{
-    assert(self);
-
-    py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
-
-    std::vector<ff::ff_node*> set;
-    // Iterate over all of the arguments.
-    PyObject* iterator = PyObject_GetIter(arg);
-    PyObject* item;
-    while ((item = PyIter_Next(iterator))) {
-        ff::ff_node* node;
-        // we may have a pipeline as item
-        if (PyObject_TypeCheck(item, &py_ff_pipeline_type) != 0) {
-            py_ff_pipeline_object* _pipe = reinterpret_cast<py_ff_pipeline_object*>(item);
-            if (!_pipe->pipeline->isMultiOutput()) {
-                auto last_stage = _pipe->pipeline->get_laststage();
-                auto new_node = new ff::internal_mo_transformer(last_stage, false);
-                _pipe->pipeline->change_node(last_stage, new_node, true, true);
-            }
-            node = _pipe->pipeline;
         } else {
             node = new py_ff_node_process(item);
         }
@@ -190,46 +161,44 @@ PyObject* py_ff_a2a_add_firstset_process(PyObject *self, PyObject *arg)
 
 PyDoc_STRVAR(py_ff_a2a_add_secondset_doc, "Add second set to the a2a");
 
-PyObject* py_ff_a2a_add_secondset(PyObject *self, PyObject *arg)
+PyObject* py_ff_a2a_add_secondset(PyObject *self, PyObject *args, PyObject *kwds)
 {
     assert(self);
 
     py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
 
+    PyObject *py_nodes = NULL;
+    bool use_main_thread = false;
+    if (parse_args(args, kwds, &py_nodes, &use_main_thread) == -1) return NULL;
+
     std::vector<ff::ff_node*> set;
     // Iterate over all of the arguments.
-    PyObject* iterator = PyObject_GetIter(arg);
+    PyObject* iterator = PyObject_GetIter(py_nodes);
     PyObject* item;
     while ((item = PyIter_Next(iterator))) {
         ff::ff_node* node;
-        if (_self->use_subinterpreters) node = new py_ff_node_subint(item);
-        else node = new py_ff_node(item);
+        // we may have a pipeline as item
+        if (PyObject_TypeCheck(item, &py_ff_pipeline_type) != 0) {
+            py_ff_pipeline_object* _pipe = reinterpret_cast<py_ff_pipeline_object*>(item);
+            if (!_pipe->pipeline->isMultiInput()) {
+                ff::ff_node* first_stage = _pipe->pipeline->get_firststage();
+                ff::ff_node* new_node = new ff::internal_mi_transformer(first_stage, false);
+                _pipe->pipeline->change_node(first_stage, new_node, true, true);
+            }
+            node = _pipe->pipeline;
+        } else if (_self->use_subinterpreters) {
+            node = new py_ff_node_subint(item);
+        } else if (use_main_thread) {
+            node = new py_ff_node(item);
+        } else {
+            node = new py_ff_node_process(item);
+        }
+
         set.push_back(node);
     }
     Py_DECREF(iterator);
 
-    int val = _self->a2a->add_secondset(set, true);
-    return PyLong_FromLong(val);
-}
-
-PyDoc_STRVAR(py_ff_a2a_add_secondset_process_doc, "Add second set to the a2a that runs in another process");
-
-PyObject* py_ff_a2a_add_secondset_process(PyObject *self, PyObject *arg)
-{
-    assert(self);
-
-    py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
-
-    std::vector<ff::ff_node*> set;
-    // Iterate over all of the arguments.
-    PyObject* iterator = PyObject_GetIter(arg);
-    PyObject* item;
-    while ((item = PyIter_Next(iterator))) {
-        set.push_back(new py_ff_node_process(item));
-    }
-    Py_DECREF(iterator);
-
-    int val = _self->a2a->add_secondset(set, true);
+    int val = _self->a2a->add_secondset(set, false);
     return PyLong_FromLong(val);
 }
 
@@ -266,13 +235,9 @@ static PyMethodDef py_ff_a2a_methods[] = {
     { "run_and_wait_end", (PyCFunction) py_ff_a2a_run_and_wait_end, 
         METH_NOARGS, py_ff_a2a_run_and_wait_end_doc },
     { "add_firstset",      (PyCFunction) py_ff_a2a_add_firstset, 
-        METH_O, py_ff_a2a_add_firstset_doc },
-    { "add_firstset_process",   (PyCFunction) py_ff_a2a_add_firstset_process, 
-        METH_O, py_ff_a2a_add_firstset_process_doc },
+        METH_VARARGS | METH_KEYWORDS, py_ff_a2a_add_firstset_doc },
     { "add_secondset",      (PyCFunction) py_ff_a2a_add_secondset, 
-        METH_O, py_ff_a2a_add_firstset_doc },
-    { "add_secondset_process",   (PyCFunction) py_ff_a2a_add_secondset_process, 
-        METH_O, py_ff_a2a_add_secondset_process_doc },
+        METH_VARARGS | METH_KEYWORDS, py_ff_a2a_add_firstset_doc },
     { "blocking_mode", (PyCFunction) py_ff_a2a_blocking_mode, 
         METH_O, py_ff_a2a_blocking_mode_doc },
     { "no_mapping", (PyCFunction) py_ff_a2a_no_mapping, 

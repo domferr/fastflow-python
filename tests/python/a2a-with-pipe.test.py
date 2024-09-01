@@ -39,7 +39,7 @@ class sink():
         print(lis)
         return 0
 
-def run_test(use_subinterpreters = True, use_processes = False):
+def run_test(use_subinterpreters = True):
     a2a = FFAllToAll(use_subinterpreters)
     first_stage_size = 1
     second_stage_size = 1
@@ -50,39 +50,24 @@ def run_test(use_subinterpreters = True, use_processes = False):
         sourcenode = source(f'source{i+1}')
         st1 = pipestage(f'st{i+1}-1')
         st2 = pipestage(f'st{i+1}-2')
-        if use_processes:
-            pipe.add_stage_process(sourcenode)
-        else:
-            pipe.add_stage(sourcenode)
-        if use_processes:
-            pipe.add_stage_process(st1)
-        else:
-            pipe.add_stage(st1)
-        if use_processes:
-            pipe.add_stage_process(st2)
-        else:
-            pipe.add_stage(st2)
+        pipe.add_stage(sourcenode)
+        pipe.add_stage(st1)
+        pipe.add_stage(st2)
         first_lis.append(pipe)
     
     # add first stages
-    if use_processes:
-        a2a.add_firstset_process(first_lis)
-    else:
-        a2a.add_firstset(first_lis)
+    a2a.add_firstset(first_lis)
 
     # build second stages
     second_lis = [sink(f'sink{i+1}') for i in range(second_stage_size)]
     # add second stages
-    if use_processes:
-        a2a.add_secondset_process(second_lis)
-    else:
-        a2a.add_secondset(second_lis)
+    a2a.add_secondset(second_lis)
     
     a2a.run_and_wait_end()
 
 if __name__ == "__main__":
     print("Subinterpreters")
-    run_test(True, False)
+    run_test(use_subinterpreters = True)
     print()
     print("Processes")
-    run_test(False, True)
+    run_test(use_subinterpreters = False)
