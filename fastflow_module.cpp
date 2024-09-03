@@ -4,9 +4,9 @@
 #include <cstring>
 #include <ostream>
 #include <sstream>
+#include "py_ff_a2a.hpp"
 #include "py_ff_pipeline.hpp"
 #include "py_ff_farm.hpp"
-#include "py_ff_a2a.hpp"
 
 // A struct contains the definition of a module
 PyModuleDef moduledef = {
@@ -50,14 +50,10 @@ PyInit_fastflow_module(void) {
     }
     
     // add FFAllToAll
-    PyObject *py_ff_a2a = PyType_FromSpec(&spec_py_ff_a2a);
-    if (py_ff_a2a == NULL){
+    if (PyType_Ready(&py_ff_a2a_type) < 0)
         return NULL;
-    }
-    Py_INCREF(py_ff_a2a);
     
-    if (PyModule_AddObject(module, "FFAllToAll", py_ff_a2a) < 0){
-        Py_DECREF(py_ff_a2a);
+    if (PyModule_AddObject(module, "FFAllToAll", (PyObject *) &py_ff_a2a_type) < 0) {
         Py_DECREF(module);
         return NULL;
     }

@@ -9,6 +9,7 @@
 #include "pickle.hpp"
 #include "debugging.hpp"
 
+#if PY_MINOR_VERSION >= 12
 class py_ff_node_subint: public ff::ff_node {
 public:
     /* Inherit the constructors */
@@ -209,5 +210,10 @@ private:
     PyObject* svc_func;
     pickling* pickl;
 };
+#else
+class py_ff_node_subint: public py_ff_node {
+    using py_ff_node::py_ff_node;
+};
+#endif
 
 #endif // PY_FF_NODE_SUBINT

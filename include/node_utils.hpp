@@ -1,3 +1,6 @@
+#ifndef PY_FF_NODE_UTILS
+#define PY_FF_NODE_UTILS
+
 #include <Python.h>
 #include <ff/ff.hpp>
 #include "py_ff_node.hpp"
@@ -40,3 +43,5 @@ ff::ff_node* args_to_node(PyObject *args, PyObject *kwds, bool use_subints) {
     
     return new py_ff_node_process(py_node);
 }
+
+#endif // NODE_UTILS

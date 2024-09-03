@@ -1,4 +1,5 @@
 from fastflow_module import FFPipeline
+import sys
 
 class source():
     def __init__(self):
@@ -25,7 +26,7 @@ class sink():
         print(lis)
         return 0
 
-def run_test(use_subinterpreters, use_main_thread = True):
+def run_test(use_subinterpreters, use_main_thread = False):
     pipe = FFPipeline(use_subinterpreters)
     sourcenode = source()
     st1 = stage('st1')
@@ -38,8 +39,10 @@ def run_test(use_subinterpreters, use_main_thread = True):
     pipe.run_and_wait_end()
 
 if __name__ == "__main__":
-    print("Subinterpreters")
-    run_test(use_subinterpreters = True)
+    if sys.version_info[1] >= 12:
+        run_test(use_subinterpreters = True)
+    else:
+        print("Skip subinterpreters test because python version is < 3.12")
     print()
     print("Processes")
     run_test(use_subinterpreters = False)

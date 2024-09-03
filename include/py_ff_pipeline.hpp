@@ -12,6 +12,7 @@
 #include <ff/ff.hpp>
 #include <iostream>
 #include "node_utils.hpp"
+#include "py_ff_a2a.fwd.hpp"
 
 typedef struct {
     PyObject_HEAD
@@ -122,10 +123,27 @@ PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *args, PyObject *kwd
 
     py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
 
-    ff::ff_node* node = args_to_node(args, kwds, _self->use_subinterpreters);
-    if (node == NULL) return NULL;
+    PyObject *py_node = NULL;
+    bool use_main_thread = false;
+    if (parse_args(args, kwds, &py_node, &use_main_thread) == -1) return NULL;
 
-    int val = _self->pipeline->add_stage(node, true);
+    ff::ff_node* node;
+    bool cleanup = true;
+
+    // we may have an a2a as item
+    if (PyA2A_Check(py_node)) {
+        py_ff_a2a_object* _a2a = reinterpret_cast<py_ff_a2a_object*>(py_node);
+        node = _a2a->a2a;
+        cleanup = false;
+    } else if (_self->use_subinterpreters) {
+        node = new py_ff_node_subint(py_node);
+    } else if (use_main_thread) {
+        node = new py_ff_node(py_node);
+    } else {
+        node = new py_ff_node_process(py_node);
+    }
+
+    int val = _self->pipeline->add_stage(node, cleanup);
     return PyLong_FromLong(val);
 }
 

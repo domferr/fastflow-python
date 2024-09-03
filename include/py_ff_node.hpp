@@ -59,7 +59,6 @@ public:
         PyEval_SaveThread();
 
         if (py_result == Py_None) {
-            Py_DECREF(py_result);
             return NULL;
         }
         return (void*) py_result;

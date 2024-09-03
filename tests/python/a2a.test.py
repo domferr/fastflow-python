@@ -1,4 +1,5 @@
 from fastflow_module import FFAllToAll
+import sys
 
 """
     first _   _ second
@@ -46,8 +47,10 @@ def run_test(use_subinterpreters = True):
     a2a.run_and_wait_end()
 
 if __name__ == "__main__":
-    print("Subinterpreters")
-    run_test(use_subinterpreters = True)
+    if sys.version_info[1] >= 12:
+        run_test(use_subinterpreters = True)
+    else:
+        print("Skip subinterpreters test because python version is < 3.12")
     print()
     print("Processes")
     run_test(use_subinterpreters = False)

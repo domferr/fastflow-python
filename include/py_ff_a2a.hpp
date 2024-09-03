@@ -14,13 +14,10 @@
 #include "py_ff_node.hpp"
 #include "py_ff_node_subint.hpp"
 #include "py_ff_node_process.hpp"
+#include "node_utils.hpp"
+#include "py_ff_pipeline.hpp"
 #include <ff/multinode.hpp>
-
-typedef struct {
-    PyObject_HEAD
-    bool use_subinterpreters;
-    ff::ff_a2a* a2a;
-} py_ff_a2a_object;
+#include "py_ff_a2a.fwd.hpp"
 
 PyObject *py_ff_a2a_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -250,7 +247,7 @@ static struct PyMemberDef py_ff_a2a_members[] = {
     {NULL} /* Sentinel */
 };
 
-static PyType_Slot py_ff_a2a_slots[] = {
+/* static PyType_Slot py_ff_a2a_slots[] = {
     {Py_tp_new, (void*)py_ff_a2a_new},
     {Py_tp_init, (void*)py_ff_a2a_init},
     {Py_tp_dealloc, (void*)py_ff_a2a_dealloc},
@@ -261,10 +258,24 @@ static PyType_Slot py_ff_a2a_slots[] = {
 
 static PyType_Spec spec_py_ff_a2a = {
     "FFAllToAll",                                  // name
-    sizeof(py_ff_a2a_object) + sizeof(ff::ff_pipeline),    // basicsize
+    sizeof(py_ff_a2a_object) + sizeof(ff::ff_a2a),    // basicsize
     0,                                          // itemsize
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   // flags
     py_ff_a2a_slots                               // slots
+};*/
+
+PyTypeObject py_ff_a2a_type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "fastflow_module.FFAllToAll",
+    .tp_basicsize = sizeof(py_ff_a2a_object) + sizeof(ff::ff_a2a),
+    .tp_itemsize = 0,
+    .tp_dealloc = (destructor) py_ff_a2a_dealloc,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_doc = PyDoc_STR("All to all"),
+    .tp_methods = py_ff_a2a_methods,
+    .tp_members = py_ff_a2a_members,
+    .tp_init = (initproc) py_ff_a2a_init,
+    .tp_new = py_ff_a2a_new,
 };
 
 #endif //PY_FF_ALLTOALL

@@ -105,7 +105,7 @@ PyObject* py_ff_farm_run_and_wait_end(PyObject *self, PyObject *args)
     assert(self);
 
     py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
-    
+
     // Release GIL while waiting for thread.
     int val = 0;
     Py_BEGIN_ALLOW_THREADS
