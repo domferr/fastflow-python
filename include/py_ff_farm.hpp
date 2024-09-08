@@ -12,8 +12,8 @@
 #include <ff/ff.hpp>
 #include <iostream>
 #include "py_ff_node.hpp"
-#include "py_ff_node_subint.hpp"
-#include "py_ff_node_process.hpp"
+#include "subint/ff_node_subint.hpp"
+#include "process/ff_node_process.hpp"
 
 typedef struct {
     PyObject_HEAD
@@ -123,11 +123,11 @@ PyObject* py_ff_farm_add_emitter(PyObject *self, PyObject *args, PyObject *kwds)
 
     py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
     
-    ff::ff_node* node = args_to_node(args, kwds, _self->use_subinterpreters);
+    ff::ff_node* node = args_to_node(args, kwds, _self->use_subinterpreters, true);
     if (node == NULL) return NULL;
 
     int val = _self->farm->add_emitter(node);
-    _self->farm->cleanup_emitter(true);
+
     return PyLong_FromLong(val);
 }
 
@@ -150,11 +150,11 @@ PyObject* py_ff_farm_add_workers(PyObject *self, PyObject *args, PyObject *kwds)
     while ((item = PyIter_Next(iterator))) {
         ff::ff_node* node;
         if (_self->use_subinterpreters) {
-            node = new py_ff_node_subint(item);
+            node = new ff_node_subint(item);
         } else if (use_main_thread) {
             node = new py_ff_node(item);
         } else {
-            node = new py_ff_node_process(item);
+            node = new ff_node_process(item);
         }
         workers.push_back(node);
     }

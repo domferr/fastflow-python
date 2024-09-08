@@ -1,5 +1,5 @@
-#ifndef PY_FF_NODE_SUBINT
-#define PY_FF_NODE_SUBINT
+#ifndef BASE_SUBINT
+#define BASE_SUBINT
 
 #include <Python.h>
 #include <ff/ff.hpp>
@@ -8,23 +8,22 @@
 #include "error_macros.hpp"
 #include "pickle.hpp"
 #include "debugging.hpp"
+#include "../py_ff_callback.hpp"
+#include "py_ff_constant.hpp"
 
 #if PY_MINOR_VERSION >= 12
-class py_ff_node_subint: public ff::ff_node {
+class base_subint {
 public:
-    /* Inherit the constructors */
-    using ff_node::ff_node;
-
-    py_ff_node_subint(PyObject* node): node(node), svc_func(nullptr), pickl(nullptr) {
+    base_subint(PyObject* node, bool is_multi_output = true): node(node), svc_func(nullptr), pickl(nullptr) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         svc_func = PyObject_GetAttrString(node, "svc");
-        CHECK_ERROR("py_ff_node_subint failure: ")
+        CHECK_ERROR("py_ff_monode_subint failure: ")
     }
 
-    int svc_init() override {
+    int svc_init() {
         TIMESTART(svc_init_start_time);
-        // associate a new thread state with ff_node's thread
+        // associate a new thread state with ff_monode's thread
         PyThreadState* cached_tstate = tstate;
         tstate = PyThreadState_New(cached_tstate->interp);
 
@@ -55,11 +54,11 @@ for [k, v] in glb:
         if inspect.ismodule(v):
             if v.__package__:
                 __ff_res += f"from {v.__package__} import {k}"
-            else: # v.__package__ is empty is the module and the package are the same
+            else: # v.__package__ is empty the module and the package are the same
                 __ff_res += f"import {k}"
         elif inspect.isclass(v) or inspect.isfunction(v):
             __ff_res += inspect.getsource(v)
-        #else:
+        # else:
         #    __ff_res += f"{k} = {v}"
         __ff_res += "\n"
     except:
@@ -117,6 +116,31 @@ for [k, v] in glb:
 
         svc_func = PyObject_GetAttrString(node, "svc");
 
+        py_ff_callback_object* callback = (py_ff_callback_object*) PyObject_CallObject(
+            (PyObject *) &py_ff_callback_type, NULL
+        );
+        callback->ff_send_out_to_callback = [this](PyObject* pydata, int index) {
+            return this->py_ff_send_out_to(pydata, index);
+        };
+        
+        main_module = PyImport_ImportModule("__main__");
+        CHECK_ERROR_THEN("PyImport_ImportModule __main__ failure: ", returnValue = -1;)
+        globals = PyModule_GetDict(main_module);
+        CHECK_ERROR_THEN("PyModule_GetDict failure: ", returnValue = -1;)
+        
+        // if you access the methods from the module itself, replace it with the callback
+        if (PyDict_SetItemString(globals, "fastflow_module", (PyObject*) callback) == -1) {
+            CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
+        }
+        // if you access the methods by importing them from the module, replace each method with the callback's one
+        if (PyDict_SetItemString(globals, "ff_send_out_to", PyObject_GetAttrString((PyObject*) callback, "ff_send_out_to")) == -1) {
+            CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
+        }
+
+        if (PyDict_SetItemString(globals, GO_ON_CONSTANT_NAME, build_py_ff_constant(ff::FF_GO_ON)) == -1) {
+            CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
+        }
+
         if (PyObject_HasAttrString(node, "svc_init")) {
             PyObject* svc_init_func = PyObject_GetAttrString(node, "svc_init");
             if (svc_init_func) {
@@ -137,23 +161,12 @@ for [k, v] in glb:
         return returnValue;
     }
 
-    void * svc(void *arg) override {
-        /*PyObject* py_args = arg == NULL ? nullptr:reinterpret_cast<PyObject*>(arg);
-        PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
-        CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
-        
-        if (py_result == Py_None) {
-            Py_DECREF(py_result);
-            return NULL;
-        }
-
-        Py_INCREF(py_result);
-        return (void*) py_result;*/
-        
+    void * svc(void *arg) {
+        auto is_ff_marker = arg == ff::FF_GO_ON;
         TIMESTART(svc_start_time);
-        PyObject* pickled_bytes = arg == NULL ? NULL:reinterpret_cast<PyObject*>(arg);
+        PyObject* pickled_bytes = is_ff_marker || arg == NULL ? NULL:reinterpret_cast<PyObject*>(arg);
         
-        PyObject* py_args = arg == NULL ? nullptr:pickl->unpickle_bytes(pickled_bytes);
+        PyObject* py_args = is_ff_marker || arg == NULL ? nullptr:pickl->unpickle_bytes(pickled_bytes);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
         //if (pickled_bytes) Py_DECREF(pickled_bytes);
         
@@ -163,6 +176,12 @@ for [k, v] in glb:
         if (py_result == Py_None) {
             Py_DECREF(py_result);
             return NULL;
+        }
+
+        // we may have a fastflow constant as result
+        if (PyObject_TypeCheck(py_result, &py_ff_constant_type) != 0) {
+            py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_result);
+            return _const_result->ff_const;
         }
 
         auto pickled_result_bytes = pickl->pickle_bytes(py_result);
@@ -187,7 +206,7 @@ for [k, v] in glb:
         tstate = nullptr;
     }
 
-    void svc_end() override {
+    void svc_end() {
         TIMESTART(svc_end_start_time);
         
         if (PyObject_HasAttrString(node, "svc_end") == 1) {
@@ -204,16 +223,65 @@ for [k, v] in glb:
         LOGELAPSED("svc_end time ", svc_end_start_time);
     }
 
+    PyObject* py_ff_send_out_to(PyObject *py_data, int index) {        
+        if (registered_callback == NULL) {
+            PyErr_SetString(PyExc_Exception, "Operation not available. This is not a multi output node");
+            return NULL;
+        }
+
+        if (index < 0) {
+            PyErr_SetString(PyExc_Exception, "Index cannot be negative");
+            return (PyObject*) NULL;
+        }
+
+        // we may have a fastflow constant as data to send out to index
+        if (PyObject_TypeCheck(py_data, &py_ff_constant_type) != 0) {
+            py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_data);
+            return registered_callback->ff_send_out_to(_const_result->ff_const, index) ? Py_True:Py_False;
+        }
+
+        auto pickled_data_bytes = pickl->pickle_bytes(py_data);
+        CHECK_ERROR_THEN("pickle send out data failure: ", return NULL;)
+
+        return registered_callback->ff_send_out_to(pickled_data_bytes, index) ? Py_True:Py_False;
+    }
+
+    void register_callback(ff::ff_monode* cb_node) {
+        registered_callback = cb_node;
+    }
+
+    PyObject* get_python_object() {
+        return node;
+    }
+
 private:
     PyThreadState *tstate;
     PyObject* node;
     PyObject* svc_func;
     pickling* pickl;
+    ff::ff_monode* registered_callback;
 };
 #else
-class py_ff_node_subint: public py_ff_node {
-    using py_ff_node::py_ff_node;
+class base_subint {
+public:
+    base_subint(PyObject* node, bool unused = false) {}
+
+    int svc_init() {
+        throw "Subinterpreters not supported";
+    }
+
+    void * svc(void *arg) {
+        throw "Subinterpreters not supported";
+    }
+
+    void svc_end() {
+        throw "Subinterpreters not supported";
+    }
+
+    void register_callback(ff::ff_monode* cb_node) { }
+
+    PyObject* get_python_object() { return NULL; }
 };
 #endif
 
-#endif // PY_FF_NODE_SUBINT
+#endif // BASE_SUBINT

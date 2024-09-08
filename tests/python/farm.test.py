@@ -1,4 +1,4 @@
-from fastflow_module import FFFarm
+from fastflow_module import FFFarm, GO_ON
 import sys
 
 class source():
@@ -7,7 +7,7 @@ class source():
 
     def svc(self, *arg):
         if self.counter == 12:
-            return None
+            return
         self.counter += 1
 
         return list(['source'])
@@ -23,14 +23,14 @@ class worker():
 class sink():    
     def svc(self, lis: list):
         print(lis)
-        return 0
+        return GO_ON
 
 def run_test(use_subinterpreters = True):
     farm = FFFarm(use_subinterpreters)
     sourcenode = source()
     sinknode = sink()
     w_lis = []
-    for i in range(6):
+    for i in range(3):
         w = worker(f"{i+1}")
         w_lis.append(w)
     farm.add_emitter(sourcenode)
@@ -40,6 +40,7 @@ def run_test(use_subinterpreters = True):
 
 if __name__ == "__main__":
     if sys.version_info[1] >= 12:
+        print("Subinterpreters")
         run_test(use_subinterpreters = True)
     else:
         print("Skip subinterpreters test because python version is < 3.12")

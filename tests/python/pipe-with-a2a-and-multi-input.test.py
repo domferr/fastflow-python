@@ -2,13 +2,13 @@ from fastflow_module import FFAllToAll, FFPipeline, GO_ON
 import sys
 
 """
-    source1 - stage11 - stage21 _   _ sink1
-                                 | |
-    source2 - stage12 - stage22 _|_|_ sink2
-                                 | |
-    source3 - stage13 - stage23 _|_|_ sink3
-                                 |
-    source4 - stage14 - stage24 _|
+    first _   _ second _
+           | |          |
+    first _|_|_ second -|---sink
+           | |          |
+    first _|_|_ second _|
+           |
+    first _|
 """
 
 class source():
@@ -18,33 +18,22 @@ class source():
 
     def svc(self, *arg):
         if self.counter > 5:
-            return
+            return None
         self.counter += 1
 
         return list([self.id])
 
-class pipestage():
+class second():
     def __init__(self, id):
         self.id = id
-    
+
     def svc(self, lis: list):
         lis.append(self.id)
         return lis
 
-class lastpipestage():
-    def __init__(self, id):
-        self.id = id
-    
-    def svc(self, lis: list):
-        lis.append(self.id)
-        return lis
-    
 class sink():
-    def __init__(self, id):
-        self.id = id
-
     def svc(self, lis: list):
-        lis.append(self.id)
+        lis.append("sink")
         print(lis)
         return GO_ON
 
@@ -53,26 +42,21 @@ def run_test(use_subinterpreters = True):
     first_stage_size = 4
     second_stage_size = 3
     # build first stages
-    first_lis = []
-    for i in range(first_stage_size):
-        pipe = FFPipeline(use_subinterpreters)
-        sourcenode = source(f'source{i+1}')
-        st1 = pipestage(f'st{i+1}-1')
-        st2 = lastpipestage(f'st{i+1}-2')
-        pipe.add_stage(sourcenode)
-        pipe.add_stage(st1)
-        pipe.add_stage(st2)
-        first_lis.append(pipe)
-    
+    first_lis = [source(i+1) for i in range(first_stage_size)]
+    # build second stages
+    second_lis = [second(i+1) for i in range(second_stage_size)]
     # add first stages
     a2a.add_firstset(first_lis)
-
-    # build second stages
-    second_lis = [sink(f'sink{i+1}') for i in range(second_stage_size)]
     # add second stages
     a2a.add_secondset(second_lis)
 
-    a2a.run_and_wait_end()
+    pipe = FFPipeline(use_subinterpreters)
+    pipe.add_stage(a2a)
+
+    sink_node = sink()
+    pipe.add_stage(sink_node)
+    
+    pipe.run_and_wait_end()
 
 if __name__ == "__main__":
     if sys.version_info[1] >= 12:

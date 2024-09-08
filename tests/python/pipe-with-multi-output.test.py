@@ -1,36 +1,36 @@
-from fastflow_module import FFAllToAll, FFPipeline, GO_ON
+from fastflow_module import FFAllToAll, FFPipeline, GO_ON, ff_send_out_to
 import sys
 
 """
-         _ one --- two _
-        |               |
-source__|_ one --- two -|-- sink
-        |               |
-        |_ one --- two _|
-
+                __ first _   _ second
+               |          | |
+               |__ first _|_|_ second
+    source --- |          | |
+               |__ first _|_|_ second
+               |          |
+               |__ first _|
 """
 
 class source():
-    def __init__(self, id):
+    def __init__(self):
         self.counter = 1
-        self.id = id
 
     def svc(self, *arg):
         if self.counter > 5:
-            return
+            return None
         self.counter += 1
+        ff_send_out_to(list(["source-to-first1"]), 0)
+        return list(["source-to-any"])
 
-        return list([self.id])
-
-class a2astage():
+class first():
     def __init__(self, id):
         self.id = id
-    
+
     def svc(self, lis: list):
         lis.append(self.id)
         return lis
-    
-class sink():
+
+class second():
     def __init__(self, id):
         self.id = id
 
@@ -42,31 +42,21 @@ class sink():
 def run_test(use_subinterpreters = True):
     pipe = FFPipeline(use_subinterpreters)
 
-    source_a2a = FFAllToAll(use_subinterpreters)
-    second_stage_size = 3
-    # build first stages
-    source_first_lis = [source("source")]
-    # add first stages
-    source_a2a.add_firstset(source_first_lis)
-
-    # build second stages
-    second_lis = [a2astage(f'one{i+1}') for i in range(second_stage_size)]
-    # add second stages
-    source_a2a.add_secondset(second_lis)
-
-    pipe.add_stage(source_a2a)
+    source_node = source()
+    pipe.add_stage(source_node)
 
     a2a = FFAllToAll(use_subinterpreters)
-    first_stage_size = second_stage_size
+    first_stage_size = 4
+    second_stage_size = 3
     # build first stages
-    first_lis = [a2astage(f'two{i+1}') for i in range(first_stage_size)]
+    first_lis = [first(f"first{i+1}") for i in range(first_stage_size)]
+    # build second stages
+    second_lis = [second(f"second{i+1}") for i in range(second_stage_size)]
     # add first stages
     a2a.add_firstset(first_lis)
-
-    # build second stages
-    second_lis = [sink("sink")]
     # add second stages
     a2a.add_secondset(second_lis)
+
     pipe.add_stage(a2a)
     
     pipe.run_and_wait_end()

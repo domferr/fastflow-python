@@ -12,8 +12,6 @@
 #include <ff/ff.hpp>
 #include <iostream>
 #include "py_ff_node.hpp"
-#include "py_ff_node_subint.hpp"
-#include "py_ff_node_process.hpp"
 #include "node_utils.hpp"
 #include "py_ff_pipeline.hpp"
 #include <ff/multinode.hpp>

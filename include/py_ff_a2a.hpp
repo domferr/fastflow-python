@@ -12,8 +12,10 @@
 #include <ff/ff.hpp>
 #include <iostream>
 #include "py_ff_node.hpp"
-#include "py_ff_node_subint.hpp"
-#include "py_ff_node_process.hpp"
+#include "subint/ff_monode_subint.hpp"
+#include "subint/ff_node_subint.hpp"
+#include "process/ff_monode_process.hpp"
+#include "process/ff_node_process.hpp"
 #include "node_utils.hpp"
 #include "py_ff_pipeline.hpp"
 #include <ff/multinode.hpp>
@@ -141,11 +143,11 @@ PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *args, PyObject* kwds)
             }
             node = _pipe->pipeline;
         } else if (_self->use_subinterpreters) {
-            node = new py_ff_node_subint(item);
+            node = new ff_monode_subint(item);
         } else if (use_main_thread) {
             node = new py_ff_node(item);
         } else {
-            node = new py_ff_node_process(item);
+            node = new ff_monode_process(item);
         }
         set.push_back(node);
     }
@@ -184,11 +186,11 @@ PyObject* py_ff_a2a_add_secondset(PyObject *self, PyObject *args, PyObject *kwds
             }
             node = _pipe->pipeline;
         } else if (_self->use_subinterpreters) {
-            node = new py_ff_node_subint(item);
+            node = new ff_node_subint(item);
         } else if (use_main_thread) {
             node = new py_ff_node(item);
         } else {
-            node = new py_ff_node_process(item);
+            node = new ff_node_process(item);
         }
 
         set.push_back(node);

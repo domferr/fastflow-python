@@ -4,8 +4,10 @@
 #include <Python.h>
 #include <ff/ff.hpp>
 #include "py_ff_node.hpp"
-#include "py_ff_node_subint.hpp"
-#include "py_ff_node_process.hpp"
+#include "subint/ff_monode_subint.hpp"
+#include "subint/ff_node_subint.hpp"
+#include "process/ff_monode_process.hpp"
+#include "process/ff_node_process.hpp"
 
 int parse_args(PyObject *args, PyObject *kwds, PyObject **py_node, bool *use_main_thread) {
     *use_main_thread = false;
@@ -30,18 +32,18 @@ int parse_args(PyObject *args, PyObject *kwds, PyObject **py_node, bool *use_mai
     return 0;
 }
 
-ff::ff_node* args_to_node(PyObject *args, PyObject *kwds, bool use_subints) {
+ff::ff_node* args_to_node(PyObject *args, PyObject *kwds, bool use_subints, bool multi_output = false) {
     PyObject *py_node = NULL;
     bool use_main_thread = false;
     if (parse_args(args, kwds, &py_node, &use_main_thread) == -1) return NULL;
 
     if (use_subints) {
-        return new py_ff_node_subint(py_node);
+        return multi_output ? (ff::ff_node*)new ff_monode_subint(py_node):new ff_node_subint(py_node);
     } else if (use_main_thread) {
         return new py_ff_node(py_node);
     }
     
-    return new py_ff_node_process(py_node);
+    return multi_output ? (ff::ff_node*)new ff_monode_process(py_node):new ff_node_process(py_node);
 }
 
 #endif // NODE_UTILS
