@@ -1,4 +1,4 @@
-from fastflow_module import FFFarm
+from fastflow_module import FFFarm, GO_ON
 import argparse
 import sys
 import busy_wait
@@ -33,52 +33,25 @@ class emitter():
         self.n_tasks = n_tasks
         self.data_sample = data_sample
 
-    def svc_init(self):
-        print('[emitter] svc_init was called')
-        return 0
-
     def svc(self, *args):
-        print(f'[emitter] svc, remaining tasks = {self.n_tasks}')
         if self.n_tasks == 0:
-            return None
+            return
         self.n_tasks -= 1
 
         return DummyData(self.data_sample)
-
-    def svc_end(self):
-        print(f'[emitter] svc_end was called')
 
 class worker():
     def __init__(self, ms, id):
         self.ms = ms
         self.id = id
 
-    def svc_init(self):
-        print(f'[{self.id} | worker] svc_init was called')
-        return 0
-
-    def svc(self, *args):
-        print(f'[{self.id} | worker] svc')
-        
+    def svc(self, *args):        
         busy_wait.wait(self.ms)
-
         return args
 
-    def svc_end(self):
-        print(f'[{self.id} | worker] svc_end was called')
-
-class collector():
-    def svc_init(self):
-        print('[collector] svc_init was called')
-        return 0
-    
+class collector():    
     def svc(self, *args):
-        print('[collector] svc')
-
-        return args
-
-    def svc_end(self):
-        print(f'[collector] svc_end was called')
+        return GO_ON
 
 def build_farm(n_tasks, task_ms, nworkers, data_sample, use_subinterpreters = False, use_main_thread = False):
     farm = FFFarm(use_subinterpreters)
