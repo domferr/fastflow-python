@@ -2,13 +2,13 @@ from fastflow_module import FFAllToAll, GO_ON
 import sys
 
 """
-    first _   _ second
-           | |
-    first _|_|_ second
-           | |
-    first _|_|_ second
-           |
-    first _|
+    source _   _ sink
+            | |
+    source _|_|_ sink
+            | |
+    source _|_|_ sink
+            |
+    source _|
 """
 
 class source():
@@ -18,7 +18,7 @@ class source():
 
     def svc(self, *arg):
         if self.counter > 5:
-            return None
+            return
         self.counter += 1
 
         return list([self.id])

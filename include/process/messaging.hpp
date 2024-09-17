@@ -7,13 +7,16 @@
 
 #define handleError(msg, then) do { if (errno < 0) { perror(msg); } else { LOG(msg": errno == 0, fd closed" << std::endl); } then; } while(0)
 
-#define MESSAGE_TYPE_RESPONSE '1'
-#define MESSAGE_TYPE_RESPONSE_GO_ON '2'
-#define MESSAGE_TYPE_REMOTE_FUNCTION_CALL '3'
-#define MESSAGE_TYPE_ACK '4'
+enum message_type {
+    MESSAGE_TYPE_RESPONSE = 1,
+    MESSAGE_TYPE_REMOTE_PROCEDURE_CALL,
+    MESSAGE_TYPE_RESPONSE_GO_ON,
+    MESSAGE_TYPE_RESPONSE_EOS,
+    MESSAGE_TYPE_ACK
+};
 
 struct Message {
-    char type;
+    message_type type;
     std::string data;
     std::string f_name;
 };
@@ -34,7 +37,7 @@ int sendMessage(int read_fd, int send_fd, const Message& message) {
     }
 
     // send f_name
-    uint32_t fnameSize = message.f_name.size();
+    uint32_t fnameSize = message.f_name.length();
     if (write(send_fd, &fnameSize, sizeof(fnameSize)) == -1) {
         handleError("write f_name size", return -1);
     }
@@ -92,36 +95,54 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
 }
 
-void create_message_ff_send_out_to(Message &message, std::string &data, int index) {
-    message.type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL;
-    message.f_name = "ff_send_out_to";
-    std::string index_str = std::to_string(index);
-    message.data.erase();
-    message.data.reserve(index_str.length() + 3 + data.length());
-    message.data.append(index_str);
-    message.data.append("~");
-    message.data.append(data);
-}
-
-void parse_message_ff_send_out_to(Message &message, std::string *data, int* sendout_index) {
-    int dividerPos = message.data.find('~');
-    *sendout_index = std::stoi(message.data.substr(0, dividerPos));
-    *data = message.data.substr(dividerPos+1, message.data.length() - dividerPos);
-}
-
-int remote_function_call(int send_fd, int read_fd, std::string &data, const char *f_name, Message &response) {
+int remote_procedure_call(int send_fd, int read_fd, std::string &data, const char *f_name, Message &response) {
     if (send_fd == -1 || read_fd == -1) {
         // they are -1 if an error occurred during svc_init or svc
         return -1;
     }
 
     int err = sendMessage(read_fd, send_fd, { 
-        .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, 
+        .type = MESSAGE_TYPE_REMOTE_PROCEDURE_CALL, 
         .data = data, 
         .f_name = f_name });
     if (err <= 0) return err;
 
     return receiveMessage(read_fd, send_fd, response);
+}
+
+void create_message_ff_send_out_to(Message &message, int index, void* &constant, std::string &data) {
+    if (constant != NULL && constant != ff::FF_EOS 
+        && constant != ff::FF_GO_ON) {
+            throw "fastflow constant not supported";
+    }
+
+    message.type = MESSAGE_TYPE_REMOTE_PROCEDURE_CALL;
+    message.f_name = "ff_send_out_to";
+    std::string index_str = std::to_string(index);
+    message.data.erase();
+    message.data.reserve(index_str.length() + 8 + data.length()); // 8 is just to be sure there is enough space for the constant
+    message.data.append(index_str);
+    message.data.append("~");
+    message.data.append(constant != NULL ? "t":"f");
+    message.data.append(constant != NULL ? std::to_string(constant == ff::FF_EOS ? MESSAGE_TYPE_RESPONSE_EOS:MESSAGE_TYPE_RESPONSE_GO_ON):data);
+}
+
+void parse_message_ff_send_out_to(Message &message, void **constant, int *index, std::string *data) {
+    int dividerPos = message.data.find('~');
+    *index = std::stoi(message.data.substr(0, dividerPos));
+    if (message.data.at(dividerPos+1) == 't') {
+        *data = "";
+        std::string inner_data = message.data.substr(dividerPos+2, message.data.length() - dividerPos - 1);
+        if (inner_data.compare(std::to_string(MESSAGE_TYPE_RESPONSE_EOS)) == 0) {
+            *constant = ff::FF_EOS;
+        }
+        if (inner_data.compare(std::to_string(MESSAGE_TYPE_RESPONSE_GO_ON)) == 0) {
+            *constant = ff::FF_GO_ON;
+        }
+    } else {
+        *constant = NULL;
+        *data = message.data.substr(dividerPos+2, message.data.length() - dividerPos - 1);
+    }
 }
 
 #endif  //MESSAGING_HPP
