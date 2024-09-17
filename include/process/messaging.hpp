@@ -5,14 +5,15 @@
 #include "debugging.hpp"
 #include <ff/distributed/ff_network.hpp> // import writen and readn
 
-#define handleError(msg, then) do { if (errno < 0) { perror(msg); } else { LOG(msg": errno == 0, fd closed" << std::endl); } then; } while(0)
+#define handleError(msg, then) do { perror(msg); then; } while(0)
 
 enum message_type {
     MESSAGE_TYPE_RESPONSE = 1,
     MESSAGE_TYPE_REMOTE_PROCEDURE_CALL,
-    MESSAGE_TYPE_RESPONSE_GO_ON,
-    MESSAGE_TYPE_RESPONSE_EOS,
-    MESSAGE_TYPE_ACK
+    MESSAGE_TYPE_GO_ON,
+    MESSAGE_TYPE_EOS,
+    MESSAGE_TYPE_ACK,
+    MESSAGE_TYPE_END_OF_LIFE
 };
 
 struct Message {
@@ -46,8 +47,8 @@ int sendMessage(int read_fd, int send_fd, const Message& message) {
         handleError("write f_name", return -1);
     }
 
-    int dummy; 
-    int err = read(read_fd, &dummy, sizeof(dummy)); 
+    int ack; 
+    int err = read(read_fd, &ack, sizeof(ack));
     if (err <= 0) handleError("error receiving ACK", return err);
 
     return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
@@ -62,6 +63,7 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     uint32_t dataSize;
     res = read(read_fd, &dataSize, sizeof(dataSize));
     if (res <= 0) handleError("read data size", return res);
+
     char* bufferData = new char[dataSize + 1];
     if (dataSize > 0) {
         res = readn(read_fd, bufferData, dataSize);
@@ -69,7 +71,7 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     }
     
     bufferData[dataSize] = '\0';
-    message.data = std::string(bufferData);
+    //message.data = std::string(bufferData);
     message.data.assign(bufferData, dataSize);
     delete[] bufferData;
     
@@ -88,23 +90,22 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     message.f_name = std::string(bufferFname);
     delete[] bufferFname;
 
-    int dummy = 17; 
-    res = write(send_fd, &dummy, sizeof(dummy)); 
+    int ack = 17; 
+    res = write(send_fd, &ack, sizeof(ack)); 
     if (res == -1) handleError("error sending ACK", return res);
 
     return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
 }
 
 int remote_procedure_call(int send_fd, int read_fd, std::string &data, const char *f_name, Message &response) {
-    if (send_fd == -1 || read_fd == -1) {
-        // they are -1 if an error occurred during svc_init or svc
-        return -1;
-    }
+    // they are -1 if an error occurred during svc_init or svc
+    if (send_fd == -1 || read_fd == -1) return -1;
 
     int err = sendMessage(read_fd, send_fd, { 
         .type = MESSAGE_TYPE_REMOTE_PROCEDURE_CALL, 
         .data = data, 
-        .f_name = f_name });
+        .f_name = f_name 
+    });
     if (err <= 0) return err;
 
     return receiveMessage(read_fd, send_fd, response);
@@ -124,7 +125,7 @@ void create_message_ff_send_out_to(Message &message, int index, void* &constant,
     message.data.append(index_str);
     message.data.append("~");
     message.data.append(constant != NULL ? "t":"f");
-    message.data.append(constant != NULL ? std::to_string(constant == ff::FF_EOS ? MESSAGE_TYPE_RESPONSE_EOS:MESSAGE_TYPE_RESPONSE_GO_ON):data);
+    message.data.append(constant != NULL ? std::to_string(constant == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON):data);
 }
 
 void parse_message_ff_send_out_to(Message &message, void **constant, int *index, std::string *data) {
@@ -133,10 +134,10 @@ void parse_message_ff_send_out_to(Message &message, void **constant, int *index,
     if (message.data.at(dividerPos+1) == 't') {
         *data = "";
         std::string inner_data = message.data.substr(dividerPos+2, message.data.length() - dividerPos - 1);
-        if (inner_data.compare(std::to_string(MESSAGE_TYPE_RESPONSE_EOS)) == 0) {
+        if (inner_data.compare(std::to_string(MESSAGE_TYPE_EOS)) == 0) {
             *constant = ff::FF_EOS;
         }
-        if (inner_data.compare(std::to_string(MESSAGE_TYPE_RESPONSE_GO_ON)) == 0) {
+        if (inner_data.compare(std::to_string(MESSAGE_TYPE_GO_ON)) == 0) {
             *constant = ff::FF_GO_ON;
         }
     } else {

@@ -19,6 +19,7 @@ static PyTypeObject py_ff_constant_type = {
 };
 
 #define GO_ON_CONSTANT_NAME "GO_ON"
+#define EOS_CONSTANT_NAME "EOS"
 
 PyObject* build_py_ff_constant(void *val) {
     py_ff_constant_object* constant = (py_ff_constant_object*) PyObject_CallObject(

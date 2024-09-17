@@ -1,4 +1,4 @@
-from fastflow_module import FFAllToAll, FFPipeline, GO_ON, ff_send_out_to
+from fastflow_module import FFAllToAll, FFPipeline, EOS, ff_send_out_to
 import sys
 
 """
@@ -17,7 +17,7 @@ class source():
 
     def svc(self, *arg):
         if self.counter > 5:
-            return None
+            return EOS
         self.counter += 1
         ff_send_out_to(list(["source-to-first1"]), 0)
         return list(["source-to-any"])
@@ -37,7 +37,6 @@ class second():
     def svc(self, lis: list):
         lis.append(self.id)
         print(lis)
-        return GO_ON
 
 def run_test(use_subinterpreters = True):
     pipe = FFPipeline(use_subinterpreters)

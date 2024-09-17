@@ -24,6 +24,7 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
         close(send_fd);
         close(read_fd);
         pickl.~pickling();
+        // finalize python interpreter
         Py_Finalize();
         exit(0);
     };
@@ -33,12 +34,10 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
     // receive serialized node
     int err = receiveMessage(read_fd, send_fd, message);
     if (err <= 0) handleError("[child] read serialized node", cleanup_exit());
-    LOG("[child] read serialized node");
 
     // deserialize Python node
     auto node = pickl.unpickle(message.data);
     CHECK_ERROR_THEN("[child] unpickle node failure: ", cleanup_exit();)
-    LOG("[child] deserialized node");
 
     py_ff_callback_object* callback = (py_ff_callback_object*) PyObject_CallObject(
         (PyObject *) &py_ff_callback_type, NULL
@@ -76,8 +75,6 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
             return (PyObject*) NULL;
         }
         
-        LOG("[child] sent ff_send_out_to message");
-        
         // receive response
         err = receiveMessage(read_fd, send_fd, message);
         if (err <= 0) {
@@ -104,41 +101,42 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
 
     while(err > 0) {
         err = receiveMessage(read_fd, send_fd, message);
-        if (err < 0) handleError("[child] read next", cleanup_exit());
+        if (err <= 0) handleError("[child] read next", cleanup_exit());
+        
+        if (message.type == MESSAGE_TYPE_END_OF_LIFE) break;
+        
+        // deserialize data
+        auto py_args_tuple = pickl.unpickle(message.data);
+        CHECK_ERROR_THEN("[child] deserialize data failure: ", cleanup_exit();)
+        // call function
+        PyObject *py_func = PyObject_GetAttrString(node, message.f_name.c_str());
+        CHECK_ERROR_THEN("[child] get node function: ", cleanup_exit();)
 
-        if (err > 0) {
-            // deserialize data
-            auto py_args_tuple = pickl.unpickle(message.data);
-            CHECK_ERROR_THEN("[child] deserialize data failure: ", cleanup_exit();)
-            // call function
-            PyObject *py_func = PyObject_GetAttrString(node, message.f_name.c_str());
-            CHECK_ERROR_THEN("[child] get node function: ", cleanup_exit();)
+        if (py_func) {
+            // finally call the function
+            PyObject* py_result = PyTuple_Check(py_args_tuple) == 1 ? PyObject_CallObject(py_func, py_args_tuple):PyObject_CallFunctionObjArgs(py_func, py_args_tuple, nullptr);
+            CHECK_ERROR_THEN("[child] call function failure: ", cleanup_exit();)
 
-            if (py_func) {
-                // finally call the function
-                PyObject* py_result = PyTuple_Check(py_args_tuple) == 1 ? PyObject_CallObject(py_func, py_args_tuple):PyObject_CallFunctionObjArgs(py_func, py_args_tuple, nullptr);
-                CHECK_ERROR_THEN("[child] call function failure: ", cleanup_exit();)
+            // we may have a fastflow constant as result
+            if (PyObject_TypeCheck(py_result, &py_ff_constant_type) != 0) {
+                py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_result);
+                err = sendMessage(read_fd, send_fd, { 
+                    .type = _const_result->ff_const == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON, 
+                    .data = "", 
+                    .f_name = "" 
+                });
+                if (err <= 0) handleError("[child] send constant response", cleanup_exit());
+            } else {
+                // serialize response
+                auto result_str = pickl.pickle(py_result);
+                CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
 
-                // we may have a fastflow constant as result
-                if (PyObject_TypeCheck(py_result, &py_ff_constant_type) != 0) {
-                    // py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_result);
-                    // the only constant available is FF_GO_ON
-                    err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE_GO_ON, .data = "", .f_name = "" });
-                    if (err <= 0) handleError("[child] send constant response", cleanup_exit());
-                    LOG("[child] sent constant response");
-                } else {
-                    // serialize response
-                    auto result_str = pickl.pickle(py_result);
-                    CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
+                // send response
+                err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result_str, .f_name = "" });
+                if (err <= 0) handleError("[child] send response", cleanup_exit());
 
-                    // send response
-                    err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result_str, .f_name = "" });
-                    if (err <= 0) handleError("[child] send response", cleanup_exit());
-                    LOG("[child] sent response");
-
-                    Py_DECREF(py_result);
-                    Py_DECREF(py_func);
-                }
+                Py_DECREF(py_result);
+                Py_DECREF(py_func);
             }
         }
     }
@@ -159,7 +157,6 @@ public:
     }
     
     int svc_init() {
-        TIMESTART(svc_init_start_time);
         // associate a new thread state with ff_node's thread
         PyThreadState* cached_tstate = tstate;
         tstate = PyThreadState_New(cached_tstate->interp);
@@ -252,7 +249,6 @@ public:
         }
 
         // from here the GIL is NOT acquired
-        LOGELAPSED("svc_init time ", svc_init_start_time);
         return returnValue;
     }
 
@@ -264,7 +260,6 @@ public:
         int err = remote_procedure_call(send_fd, read_fd, serialized_data, "svc", response);
         if (err <= 0) {
             handleError("remote call of svc", );
-            LOG("an error occurred, abort.");
             return NULL;
         }
 
@@ -273,7 +268,6 @@ public:
             // if the call of ff_send_out_to (as of today...)
             if (response.f_name.compare("ff_send_out_to") != 0) {
                 handleError("got invalid f_name", );
-                LOG("an error occurred, got invalid f_name. Abort.");
                 return NULL;
             }
 
@@ -291,7 +285,6 @@ public:
             err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result ? "t":"f", .f_name = "" });
             if (err <= 0) {
                 handleError("error sending ff_send_out_to response", );
-                LOG("an error occurred, sending ff_send_out_to. Abort.");
                 return NULL;
             }
 
@@ -299,35 +292,20 @@ public:
             err = receiveMessage(read_fd, send_fd, response);
             if (err <= 0) {
                 handleError("waiting for svc response", );
-                LOG("an error occurred, abort.");
                 return NULL;
             }
         }
 
         // got response of svc
-        if (response.type == MESSAGE_TYPE_RESPONSE_GO_ON) return ff::FF_GO_ON;
-        if (response.type == MESSAGE_TYPE_RESPONSE_EOS) return ff::FF_EOS;
-        if (response.data.compare(none_str) == 0) return ff::FF_EOS;
+        if (response.type == MESSAGE_TYPE_EOS) return ff::FF_EOS;
+        if (response.type == MESSAGE_TYPE_GO_ON || response.data.compare(none_str) == 0) {
+            return ff::FF_GO_ON;
+        }
 
         return new std::string(response.data);
     }
 
-    void cleanup() {
-        // Cleanup of objects created
-        Py_DECREF(node);
-        node = nullptr;
-        tstate = nullptr;
-        PyEval_SaveThread();
-
-        if (send_fd > 0) close(send_fd);
-        send_fd = -1;
-        if (read_fd > 0) close(read_fd);
-        send_fd = -1;
-    }
-
     void svc_end() {
-        TIMESTART(svc_end_start_time);
-
         if (has_svc_end) {
             Message response;
             auto empty_tuple = std::string(SERIALIZED_EMPTY_TUPLE);
@@ -335,19 +313,23 @@ public:
             if (err <= 0) handleError("read result of remote call of svc_end", );
         }
 
-        // close the pipes, so the process can stop meanwhile we acquire the GIL and cleanup everything
+        // send end of life. Meanwhile we acquire the GIL and cleanup, the process will stop
+        int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_END_OF_LIFE, .data = "", .f_name = "" });
+        
+        // Acquire the main GIL
+        PyEval_RestoreThread(tstate);
+        // Cleanup of objects created
+        Py_DECREF(node);
+        node = nullptr;
+        tstate = nullptr;
+        // Release the main GIL
+        PyEval_SaveThread();
+        waitpid(pid, nullptr, 0);
+
         if (send_fd > 0) close(send_fd);
         send_fd = -1;
         if (read_fd > 0) close(read_fd);
         send_fd = -1;
-
-        waitpid(pid, nullptr, 0);
-
-        // Acquire the main GIL
-        PyEval_RestoreThread(tstate);
-        cleanup();
-
-        LOGELAPSED("svc_end time ", svc_end_start_time);
     }
 
     void register_callback(ff::ff_monode* cb_node) {

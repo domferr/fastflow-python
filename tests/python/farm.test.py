@@ -1,4 +1,4 @@
-from fastflow_module import FFFarm, GO_ON
+from fastflow_module import FFFarm, EOS
 import sys
 
 class source():
@@ -7,7 +7,7 @@ class source():
 
     def svc(self, *arg):
         if self.counter == 12:
-            return
+            return EOS
         self.counter += 1
 
         return list(['source'])
@@ -23,7 +23,6 @@ class worker():
 class sink():    
     def svc(self, lis: list):
         print(lis)
-        return GO_ON
 
 def run_test(use_subinterpreters = True):
     farm = FFFarm(use_subinterpreters)

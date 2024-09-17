@@ -1,4 +1,4 @@
-from fastflow_module import FFAllToAll, FFPipeline, GO_ON
+from fastflow_module import FFAllToAll, FFPipeline, EOS
 import sys
 
 """
@@ -18,7 +18,7 @@ class source():
 
     def svc(self, *arg):
         if self.counter > 5:
-            return
+            return EOS
         self.counter += 1
 
         return list([self.id])
@@ -46,7 +46,6 @@ class sink():
     def svc(self, lis: list):
         lis.append(self.id)
         print(lis)
-        return GO_ON
 
 def run_test(use_subinterpreters = True):
     a2a = FFAllToAll(use_subinterpreters)
@@ -57,8 +56,8 @@ def run_test(use_subinterpreters = True):
     for i in range(first_stage_size):
         pipe = FFPipeline(use_subinterpreters)
         sourcenode = source(f'source{i+1}')
-        st1 = pipestage(f'st{i+1}-1')
-        st2 = lastpipestage(f'st{i+1}-2')
+        st1 = pipestage(f'st1-pipe{i+1}')
+        st2 = lastpipestage(f'st2-pipe{i+1}')
         pipe.add_stage(sourcenode)
         pipe.add_stage(st1)
         pipe.add_stage(st2)

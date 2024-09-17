@@ -13,15 +13,6 @@
 #include "process/ff_node_process.hpp"
 #include "py_ff_constant.hpp"
 
-PyDoc_STRVAR(ff_send_out_to_doc, "Send out to a node");
-
-PyObject* empty_ff_send_out_to(PyObject *self, PyObject *args) {
-    assert(self);
-    
-    PyErr_SetString(PyExc_Exception, "Operation not available. This is not a multi output node");
-    return NULL;
-}
-
 /* initialization function */
 static int
 fastflow_module_exec(PyObject *module) 
@@ -70,7 +61,20 @@ fastflow_module_exec(PyObject *module)
         return -1;
     }
 
+    if (PyModule_AddObject(module, EOS_CONSTANT_NAME, build_py_ff_constant(ff::FF_EOS)) < 0) {
+        return -1;
+    }
+
     return 0;
+}
+
+PyDoc_STRVAR(ff_send_out_to_doc, "Send out to a node");
+
+PyObject* empty_ff_send_out_to(PyObject *self, PyObject *args) {
+    assert(self);
+    
+    PyErr_SetString(PyExc_Exception, "Operation not available. This is not a multi output node");
+    return NULL;
 }
 
 static PyMethodDef module_methods[] = {

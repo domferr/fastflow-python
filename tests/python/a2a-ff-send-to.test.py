@@ -1,4 +1,4 @@
-from fastflow_module import FFAllToAll, GO_ON, ff_send_out_to
+from fastflow_module import FFAllToAll, EOS, ff_send_out_to
 import sys
 
 """
@@ -18,12 +18,10 @@ class source():
 
     def svc(self, *arg):
         if self.counter > 5:
-            return
+            return EOS
         self.counter += 1
 
         ff_send_out_to(list([f"source{self.id}-to-sink1"]), 0)
-
-        return GO_ON
 
 class sink():
     def __init__(self, id):
@@ -32,7 +30,6 @@ class sink():
     def svc(self, lis: list):
         lis.append(f"sink{self.id}")
         print(lis)
-        return GO_ON
 
 def run_test(use_subinterpreters = True):
     a2a = FFAllToAll(use_subinterpreters)
