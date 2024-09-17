@@ -141,6 +141,10 @@ for [k, v] in glb:
             CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
         }
 
+        if (PyDict_SetItemString(globals, EOS_CONSTANT_NAME, build_py_ff_constant(ff::FF_EOS)) == -1) {
+            CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
+        }
+
         if (PyObject_HasAttrString(node, "svc_init")) {
             PyObject* svc_init_func = PyObject_GetAttrString(node, "svc_init");
             if (svc_init_func) {
@@ -162,20 +166,22 @@ for [k, v] in glb:
     }
 
     void * svc(void *arg) {
-        auto is_ff_marker = arg == ff::FF_GO_ON;
         TIMESTART(svc_start_time);
-        PyObject* pickled_bytes = is_ff_marker || arg == NULL ? NULL:reinterpret_cast<PyObject*>(arg);
+        // arg may be equal to ff::FF_GO_ON in case of a node of a first set of an a2a that hasn't input channels
+        PyObject* pickled_bytes = arg == ff::FF_GO_ON || arg == NULL ? NULL:reinterpret_cast<PyObject*>(arg);
         
-        PyObject* py_args = is_ff_marker || arg == NULL ? nullptr:pickl->unpickle_bytes(pickled_bytes);
+        PyObject* py_args = arg == ff::FF_GO_ON || arg == NULL ? nullptr:pickl->unpickle_bytes(pickled_bytes);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
         //if (pickled_bytes) Py_DECREF(pickled_bytes);
         
         PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
-
+        
+        // map None to ff::FF_GO_ON
+        // we have None also if the svc function returned nothing (e.g. void function in c++)
         if (py_result == Py_None) {
             Py_DECREF(py_result);
-            return NULL;
+            return ff::FF_GO_ON;
         }
 
         // we may have a fastflow constant as result

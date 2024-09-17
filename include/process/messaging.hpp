@@ -10,8 +10,8 @@
 enum message_type {
     MESSAGE_TYPE_RESPONSE = 1,
     MESSAGE_TYPE_REMOTE_PROCEDURE_CALL,
-    MESSAGE_TYPE_RESPONSE_GO_ON,
-    MESSAGE_TYPE_RESPONSE_EOS,
+    MESSAGE_TYPE_GO_ON,
+    MESSAGE_TYPE_EOS,
     MESSAGE_TYPE_ACK
 };
 
@@ -62,6 +62,7 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     uint32_t dataSize;
     res = read(read_fd, &dataSize, sizeof(dataSize));
     if (res <= 0) handleError("read data size", return res);
+
     char* bufferData = new char[dataSize + 1];
     if (dataSize > 0) {
         res = readn(read_fd, bufferData, dataSize);
@@ -69,7 +70,7 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     }
     
     bufferData[dataSize] = '\0';
-    message.data = std::string(bufferData);
+    //message.data = std::string(bufferData);
     message.data.assign(bufferData, dataSize);
     delete[] bufferData;
     
@@ -124,7 +125,7 @@ void create_message_ff_send_out_to(Message &message, int index, void* &constant,
     message.data.append(index_str);
     message.data.append("~");
     message.data.append(constant != NULL ? "t":"f");
-    message.data.append(constant != NULL ? std::to_string(constant == ff::FF_EOS ? MESSAGE_TYPE_RESPONSE_EOS:MESSAGE_TYPE_RESPONSE_GO_ON):data);
+    message.data.append(constant != NULL ? std::to_string(constant == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON):data);
 }
 
 void parse_message_ff_send_out_to(Message &message, void **constant, int *index, std::string *data) {
@@ -133,10 +134,10 @@ void parse_message_ff_send_out_to(Message &message, void **constant, int *index,
     if (message.data.at(dividerPos+1) == 't') {
         *data = "";
         std::string inner_data = message.data.substr(dividerPos+2, message.data.length() - dividerPos - 1);
-        if (inner_data.compare(std::to_string(MESSAGE_TYPE_RESPONSE_EOS)) == 0) {
+        if (inner_data.compare(std::to_string(MESSAGE_TYPE_EOS)) == 0) {
             *constant = ff::FF_EOS;
         }
-        if (inner_data.compare(std::to_string(MESSAGE_TYPE_RESPONSE_GO_ON)) == 0) {
+        if (inner_data.compare(std::to_string(MESSAGE_TYPE_GO_ON)) == 0) {
             *constant = ff::FF_GO_ON;
         }
     } else {

@@ -1,4 +1,4 @@
-from fastflow_module import FFPipeline, GO_ON
+from fastflow_module import FFPipeline, EOS
 import sys
 
 class source():
@@ -7,7 +7,7 @@ class source():
 
     def svc(self):
         if self.counter > 5:
-            return
+            return EOS
         self.counter += 1
 
         return list(["source"])
@@ -24,7 +24,6 @@ class sink():
     def svc(self, lis: list):
         lis.append("sink")
         print(lis)
-        return GO_ON
 
 def run_test(use_subinterpreters, use_main_thread = False):
     pipe = FFPipeline(use_subinterpreters)

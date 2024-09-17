@@ -1,4 +1,4 @@
-from fastflow_module import FFAllToAll, GO_ON
+from fastflow_module import FFAllToAll, EOS
 import sys
 
 """
@@ -18,7 +18,7 @@ class source():
 
     def svc(self, *arg):
         if self.counter > 5:
-            return
+            return EOS
         self.counter += 1
 
         return list([self.id])
@@ -30,7 +30,6 @@ class sink():
     def svc(self, lis: list):
         lis.append(self.id)
         print(lis)
-        return GO_ON
 
 def run_test(use_subinterpreters = True):
     a2a = FFAllToAll(use_subinterpreters)

@@ -121,9 +121,12 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
 
                 // we may have a fastflow constant as result
                 if (PyObject_TypeCheck(py_result, &py_ff_constant_type) != 0) {
-                    // py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_result);
-                    // the only constant available is FF_GO_ON
-                    err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE_GO_ON, .data = "", .f_name = "" });
+                    py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_result);
+                    err = sendMessage(read_fd, send_fd, { 
+                        .type = _const_result->ff_const == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON, 
+                        .data = "", 
+                        .f_name = "" 
+                    });
                     if (err <= 0) handleError("[child] send constant response", cleanup_exit());
                     LOG("[child] sent constant response");
                 } else {
@@ -305,9 +308,9 @@ public:
         }
 
         // got response of svc
-        if (response.type == MESSAGE_TYPE_RESPONSE_GO_ON) return ff::FF_GO_ON;
-        if (response.type == MESSAGE_TYPE_RESPONSE_EOS) return ff::FF_EOS;
-        if (response.data.compare(none_str) == 0) return ff::FF_EOS;
+        if (response.type == MESSAGE_TYPE_GO_ON) return ff::FF_GO_ON;
+        if (response.type == MESSAGE_TYPE_EOS) return ff::FF_EOS;
+        if (response.data.compare(none_str) == 0) return ff::FF_GO_ON;
 
         return new std::string(response.data);
     }

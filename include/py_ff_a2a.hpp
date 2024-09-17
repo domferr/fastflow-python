@@ -138,8 +138,18 @@ PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *args, PyObject* kwds)
             py_ff_pipeline_object* _pipe = reinterpret_cast<py_ff_pipeline_object*>(item);
             if (!_pipe->pipeline->isMultiOutput()) {
                 ff::ff_node* last_stage = _pipe->pipeline->get_laststage();
-                ff::ff_node* new_node = new ff::internal_mo_transformer(last_stage, false);
-                _pipe->pipeline->change_node(last_stage, new_node, true, true);
+                // let's replace the last stage with a multi output variant
+                PyObject *last_stage_py_node = _self->use_subinterpreters ? 
+                    (reinterpret_cast<ff_node_subint*>(last_stage))->get_python_object():
+                    (reinterpret_cast<ff_node_process*>(last_stage))->get_python_object();
+                if (last_stage_py_node == NULL) {
+                    PyErr_SetString(PyExc_RuntimeError, "Unable to transform previous stage to multi output (null pointer)");
+                    return NULL;
+                }
+                ff::ff_node* new_last_stage = _self->use_subinterpreters ? 
+                    (ff::ff_node*) new ff_monode_subint(last_stage_py_node):
+                    (ff::ff_node*) new ff_monode_process(last_stage_py_node);
+                _pipe->pipeline->change_node(last_stage, new_last_stage, true, true);
             }
             node = _pipe->pipeline;
         } else if (_self->use_subinterpreters) {
