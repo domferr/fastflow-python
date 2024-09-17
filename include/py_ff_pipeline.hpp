@@ -27,7 +27,7 @@ PyObject *py_ff_pipeline_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     self = (py_ff_pipeline_object*) type->tp_alloc(type, 0);
     if(self != NULL){ // -> allocation successfull
         // assign initial values
-        self->use_subinterpreters = true;
+        self->use_subinterpreters = false;
         self->pipeline = NULL; 
     }
     return (PyObject*) self;
@@ -37,7 +37,7 @@ int py_ff_pipeline_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     py_ff_pipeline_object* m = (py_ff_pipeline_object*)self;
 
-    PyObject* bool_arg = Py_True;
+    PyObject* bool_arg = Py_False;
     if (!PyArg_ParseTuple(args, "|O", &bool_arg)) {
         PyErr_SetString(PyExc_RuntimeError, "Error parsing tuple");
         return -1;

@@ -27,7 +27,7 @@ PyObject *py_ff_farm_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     self = (py_ff_farm_object*) type->tp_alloc(type, 0);
     if(self != NULL){ // -> allocation successfull
         // assign initial values
-        self->use_subinterpreters = true;
+        self->use_subinterpreters = false;
         self->farm = NULL; 
     }
     return (PyObject*) self;
@@ -37,7 +37,7 @@ int py_ff_farm_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     py_ff_farm_object* m = (py_ff_farm_object*)self;
 
-    PyObject* bool_arg = Py_True;
+    PyObject* bool_arg = Py_False;
     if (!PyArg_ParseTuple(args, "|O", &bool_arg)) {
         std::cerr << "error parsing tuple" << std::endl;
     } else if (bool_arg != nullptr && !PyBool_Check(bool_arg)) {
