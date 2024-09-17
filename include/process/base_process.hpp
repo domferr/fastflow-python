@@ -54,12 +54,20 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
             return (PyObject*) NULL;
         }
 
-        // serialize pydata
-        auto pydata_str = pickl.pickle(pydata);
-        if (PyErr_Occurred()) return (PyObject*) NULL;
+        // we may have a fastflow constant as data to send out to index
+        void *constant = NULL;
+        std::string pydata_str = "";
+        if (PyObject_TypeCheck(pydata, &py_ff_constant_type) != 0) {
+            py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(pydata);
+            constant = _const_result->ff_const;
+        } else {
+            // serialize pydata
+            pydata_str = pickl.pickle(pydata);
+            if (PyErr_Occurred()) return (PyObject*) NULL;
+        }
 
         Message message;
-        create_message_ff_send_out_to(message, pydata_str, index);
+        create_message_ff_send_out_to(message, index, constant, pydata_str);
 
         // send response
         int err = sendMessage(read_fd, send_fd, message);
@@ -140,7 +148,7 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
     cleanup_exit();
 }
 
-#define EMPTY_TUPLE_STR "(t."
+#define SERIALIZED_EMPTY_TUPLE "(t."
 
 class base_process {
 public:    
@@ -214,13 +222,13 @@ public:
             send_fd = mainToChildFD[1];
             read_fd = childToMainFD[0];
 
-            int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_FUNCTION_CALL, .data = node_str, .f_name = "" });
+            int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_PROCEDURE_CALL, .data = node_str, .f_name = "" });
             if (err <= 0) handleError("send serialized node", returnValue = -1);
 
             if (err > 0 && has_svc_init) {
                 Message response;
-                auto empty_tuple = std::string(EMPTY_TUPLE_STR);
-                int err = remote_function_call(send_fd, read_fd, empty_tuple, "svc_init", response);
+                auto empty_tuple = std::string(SERIALIZED_EMPTY_TUPLE);
+                int err = remote_procedure_call(send_fd, read_fd, empty_tuple, "svc_init", response);
                 if (err <= 0) {
                     handleError("read result of remote call of svc_init", );
                 } else {
@@ -228,8 +236,8 @@ public:
                     PyEval_RestoreThread(tstate);
                     PyObject *svc_init_result = pickl.unpickle(response.data);
                     CHECK_ERROR_THEN("unpickle svc_init_result failure: ", returnValue = -1;)
+
                     returnValue = 0;
-                    // if we are here, then the GIL was acquired before
                     if (PyLong_Check(svc_init_result)) {
                         long res_as_long = PyLong_AsLong(svc_init_result);
                         returnValue = static_cast<int>(res_as_long);
@@ -249,18 +257,20 @@ public:
     }
 
     void* svc(void *arg) {
-        auto is_ff_marker = arg == ff::FF_GO_ON;
-        std::string serialized_data = is_ff_marker || arg == NULL ? EMPTY_TUPLE_STR:*reinterpret_cast<std::string*>(arg);
+        // arg may be equal to ff::FF_GO_ON in case of a node of a first set of an a2a that hasn't input channels
+        std::string serialized_data = arg == NULL || arg == ff::FF_GO_ON ? SERIALIZED_EMPTY_TUPLE:*reinterpret_cast<std::string*>(arg);
 
         Message response;
-        int err = remote_function_call(send_fd, read_fd, serialized_data, "svc", response);
+        int err = remote_procedure_call(send_fd, read_fd, serialized_data, "svc", response);
         if (err <= 0) {
             handleError("remote call of svc", );
             LOG("an error occurred, abort.");
             return NULL;
         }
 
-        while(response.type == MESSAGE_TYPE_REMOTE_FUNCTION_CALL) {
+        while(response.type == MESSAGE_TYPE_REMOTE_PROCEDURE_CALL) {
+            // the only supported remote procedure call from the child process
+            // if the call of ff_send_out_to (as of today...)
             if (response.f_name.compare("ff_send_out_to") != 0) {
                 handleError("got invalid f_name", );
                 LOG("an error occurred, got invalid f_name. Abort.");
@@ -268,12 +278,14 @@ public:
             }
 
             // parse received ff_send_out_to request
-            int sendout_index = 0;
-            std::string* ser_data = new std::string();
-            parse_message_ff_send_out_to(response, ser_data, &sendout_index);
+            int index;
+            void *constant = NULL;
+            std::string *data = new std::string();
+            parse_message_ff_send_out_to(response, &constant, &index, data);
 
+            if (constant != NULL) free(data);
             // finally perform ff_send_out_to
-            bool result = registered_callback->ff_send_out_to(ser_data, sendout_index);
+            bool result = registered_callback->ff_send_out_to(constant != NULL ? constant:data, index);
 
             // send ff_send_out_to result
             err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result ? "t":"f", .f_name = "" });
@@ -294,6 +306,7 @@ public:
 
         // got response of svc
         if (response.type == MESSAGE_TYPE_RESPONSE_GO_ON) return ff::FF_GO_ON;
+        if (response.type == MESSAGE_TYPE_RESPONSE_EOS) return ff::FF_EOS;
         if (response.data.compare(none_str) == 0) return ff::FF_EOS;
 
         return new std::string(response.data);
@@ -317,8 +330,8 @@ public:
 
         if (has_svc_end) {
             Message response;
-            auto empty_tuple = std::string(EMPTY_TUPLE_STR);
-            int err = remote_function_call(send_fd, read_fd, empty_tuple, "svc_end", response);
+            auto empty_tuple = std::string(SERIALIZED_EMPTY_TUPLE);
+            int err = remote_procedure_call(send_fd, read_fd, empty_tuple, "svc_end", response);
             if (err <= 0) handleError("read result of remote call of svc_end", );
         }
 

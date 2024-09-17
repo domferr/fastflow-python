@@ -2,13 +2,13 @@ from fastflow_module import FFAllToAll, GO_ON, ff_send_out_to
 import sys
 
 """
-    first ______ second
-             |
-    first ___|   second
-             |
-    first ___|   second
-             |
-    first ___|
+    source ______ sink
+              |
+    source ___|   sink
+              |
+    source ___|   sink
+              |
+    source ___|
 """
 
 class source():
