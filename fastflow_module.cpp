@@ -15,7 +15,7 @@
 
 /* initialization function */
 static int
-fastflow_module_exec(PyObject *module) 
+fastflow_exec(PyObject *module) 
 {    
     // add FFPipeline
     if (PyType_Ready(&py_ff_pipeline_type) < 0)
@@ -83,7 +83,7 @@ static PyMethodDef module_methods[] = {
 };
 
 static PyModuleDef_Slot module_slots[] = {
-    {Py_mod_exec, (void*) fastflow_module_exec},
+    {Py_mod_exec, (void*) fastflow_exec},
 #if PY_MINOR_VERSION >= 12
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
 #endif
@@ -92,7 +92,7 @@ static PyModuleDef_Slot module_slots[] = {
 
 static struct PyModuleDef moduledef = {
     .m_base = PyModuleDef_HEAD_INIT,
-    .m_name = "fastflow_module",
+    .m_name = "fastflow",
     .m_doc = "This is FastFlow's docstring",
     .m_size = 0,
     .m_methods = module_methods,
@@ -100,7 +100,7 @@ static struct PyModuleDef moduledef = {
 };
 
 PyMODINIT_FUNC
-PyInit_fastflow_module(void) {
+PyInit_fastflow(void) {
     return PyModuleDef_Init(&moduledef);
 }
 

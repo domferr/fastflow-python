@@ -18,23 +18,18 @@ class worker():
     
     def svc(self, lis: list):
         lis.append(self.id)
-        return lis
-
-class sink():    
-    def svc(self, lis: list):
         print(lis)
+        return lis
 
 def run_test(use_subinterpreters = True):
     farm = FFFarm(use_subinterpreters)
     sourcenode = source()
-    sinknode = sink()
     w_lis = []
     for i in range(3):
         w = worker(f"worker{i+1}")
         w_lis.append(w)
     farm.add_emitter(sourcenode)
     farm.add_workers(w_lis)
-    farm.add_collector(sinknode)
     farm.run_and_wait_end()
 
 if __name__ == "__main__":

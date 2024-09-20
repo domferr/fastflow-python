@@ -231,7 +231,7 @@ static PyType_Spec spec_py_ff_pipeline = {
 
 static PyTypeObject py_ff_pipeline_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "fastflow_module.FFPipeline",
+    .tp_name = "fastflow.FFPipeline",
     .tp_basicsize = sizeof(py_ff_pipeline_object) + sizeof(ff::ff_pipeline),
     .tp_itemsize = 0,
     .tp_dealloc = (destructor) py_ff_pipeline_dealloc,

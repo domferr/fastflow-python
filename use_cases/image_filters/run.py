@@ -1,4 +1,4 @@
-from fastflow_module import FFFarm
+from fastflow import FFFarm
 from PIL import Image, ImageFilter
 import argparse
 import sys

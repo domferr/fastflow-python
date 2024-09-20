@@ -129,7 +129,7 @@ for [k, v] in glb:
         CHECK_ERROR_THEN("PyModule_GetDict failure: ", returnValue = -1;)
         
         // if you access the methods from the module itself, replace it with the callback
-        if (PyDict_SetItemString(globals, "fastflow_module", (PyObject*) callback) == -1) {
+        if (PyDict_SetItemString(globals, "fastflow", (PyObject*) callback) == -1) {
             CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
         }
         // if you access the methods by importing them from the module, replace each method with the callback's one

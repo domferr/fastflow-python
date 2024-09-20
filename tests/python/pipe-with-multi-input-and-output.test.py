@@ -1,4 +1,4 @@
-from fastflow_module import FFAllToAll, FFPipeline, EOS, ff_send_out_to
+from fastflow import FFAllToAll, FFPipeline, EOS, ff_send_out_to
 import sys
 
 """

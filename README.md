@@ -3,7 +3,7 @@
 ### Farm
 
 ```py
-from fastflow_module import FFFarm, GO_ON
+from fastflow import FFFarm, GO_ON
 import sys
 
 class source():
@@ -51,7 +51,7 @@ farm.run_and_wait_end()
 ### Pipeline
 
 ```py
-from fastflow_module import FFPipeline, GO_ON
+from fastflow import FFPipeline, GO_ON
 
 # define a stage
 class stage():

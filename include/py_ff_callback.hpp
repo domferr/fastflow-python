@@ -37,7 +37,7 @@ static PyMethodDef py_ff_callback_methods[] = {
 
 static PyTypeObject py_ff_callback_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "fastflow_module.FFCallback",
+    .tp_name = "fastflow.FFCallback",
     .tp_basicsize = sizeof(py_ff_callback_object),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,

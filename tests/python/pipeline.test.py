@@ -1,4 +1,4 @@
-from fastflow_module import FFPipeline, EOS
+from fastflow import FFPipeline, EOS
 import sys
 
 class source():
