@@ -41,9 +41,9 @@ def run_test(use_subinterpreters = True):
     first_stage_size = 4
     second_stage_size = 3
     # build first stages
-    first_lis = [source(i+1) for i in range(first_stage_size)]
+    first_lis = [source(f"source{i+1}") for i in range(first_stage_size)]
     # build second stages
-    second_lis = [second(i+1) for i in range(second_stage_size)]
+    second_lis = [second(f"node{i+1}") for i in range(second_stage_size)]
     # add first stages
     a2a.add_firstset(first_lis)
     # add second stages

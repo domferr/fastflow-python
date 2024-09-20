@@ -116,6 +116,10 @@ PyObject* py_ff_pipeline_run_and_wait_end(PyObject *self, PyObject *args)
     return PyLong_FromLong(val);
 }
 
+struct forwarder_minode: ff::ff_minode {  
+    void *svc(void *in) { return in; }
+};
+
 PyDoc_STRVAR(py_ff_pipeline_add_stage_doc, "Add a stage to the pipeline");
 
 PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *args, PyObject *kwds)
@@ -151,30 +155,40 @@ PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *args, PyObject *kwd
         // if we are adding an all-to-all, convert the simple ff_node to a ff_monode
         // if the last node is multi input then we should convert to multi output too
         if (is_a2a && !last_stage->isAll2All()) {
+            auto inner_node = last_stage;
+            // if the last stage is multi input then it means that we added a combine
+            // with a forwarder_minode combined with the actual node
+            // retrieve that node and convert it to multi-output
             if (last_stage->isMultiInput()) {
-                PyErr_SetString(PyExc_RuntimeError, "Cannot transform previous stage to multi output because it has multiple inputs");
-                return NULL;
+                inner_node = (reinterpret_cast<ff::ff_comb*>(last_stage))->getLast();
             }
-
             // let's replace the last stage with a multi output variant
             PyObject *last_stage_py_node = _self->use_subinterpreters ? 
-                (reinterpret_cast<ff_node_subint*>(last_stage))->get_python_object():
-                (reinterpret_cast<ff_node_process*>(last_stage))->get_python_object();
+                (reinterpret_cast<ff_node_subint*>(inner_node))->get_python_object():
+                (reinterpret_cast<ff_node_process*>(inner_node))->get_python_object();
             if (last_stage_py_node == NULL) {
                 PyErr_SetString(PyExc_RuntimeError, "Unable to transform previous stage to multi output (null pointer)");
                 return NULL;
             }
+            
             ff::ff_node* new_last_stage = _self->use_subinterpreters ? 
                 (ff::ff_node*) new ff_monode_subint(last_stage_py_node):
                 (ff::ff_node*) new ff_monode_process(last_stage_py_node);
-            auto success = _self->pipeline->change_node(last_stage, new_last_stage, cleanup, true);
-            if (!success) {
-                PyErr_SetString(PyExc_RuntimeError, "Unable to transform previous stage to multi output");
-                return NULL;
+
+            if (last_stage->isMultiInput()) {
+                (reinterpret_cast<ff::ff_comb*>(last_stage))->changeLast(new_last_stage);
+            } else {
+                auto success = _self->pipeline->change_node(last_stage, new_last_stage, cleanup, true);
+                if (!success) {
+                    PyErr_SetString(PyExc_RuntimeError, "Unable to transform previous stage to multi output");
+                    return NULL;
+                }
+                delete last_stage;
             }
-            delete last_stage;
         } else if (!is_a2a && last_stage->isAll2All()) {
-            node = new ff::internal_mi_transformer(node, false);
+            //node = new ff::internal_mi_transformer(node, false);
+            auto *minode = new forwarder_minode();
+            node = new ff::ff_comb(minode, node, true);
         }
     }
 
