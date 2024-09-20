@@ -278,7 +278,7 @@ static PyType_Spec spec_py_ff_a2a = {
 
 PyTypeObject py_ff_a2a_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "fastflow_module.FFAllToAll",
+    .tp_name = "fastflow.FFAllToAll",
     .tp_basicsize = sizeof(py_ff_a2a_object) + sizeof(ff::ff_a2a),
     .tp_itemsize = 0,
     .tp_dealloc = (destructor) py_ff_a2a_dealloc,

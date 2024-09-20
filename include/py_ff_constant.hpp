@@ -10,7 +10,7 @@ typedef struct {
 
 static PyTypeObject py_ff_constant_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "fastflow_module.FFConstant",
+    .tp_name = "fastflow.FFConstant",
     .tp_basicsize = sizeof(py_ff_constant_object) + sizeof(void*),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,

@@ -2,7 +2,7 @@ from setuptools import setup, Extension
 
 def main():
     setup(
-        name="fastflow_module",
+        name="fastflow",
         version="1.0.0",
         description="Description",
         author="Domenico Ferraro",
@@ -10,7 +10,7 @@ def main():
         python_requires=">=3.8",
         ext_modules=[
             Extension(
-                "fastflow_module", 
+                "fastflow", 
                 ["fastflow_module.cpp"],
                 include_dirs=['fastflow', 'include'],
                 language="c++",

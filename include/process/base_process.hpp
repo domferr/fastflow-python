@@ -12,6 +12,9 @@
 #include "object.h"
 #include "../py_ff_constant.hpp"
 
+#define SERIALIZED_EMPTY_TUPLE "(t."
+#define SERIALIZED_NONE "N."
+
 void process_body(int read_fd, int send_fd, bool isMultiOutput) {
     Message message;
 
@@ -91,7 +94,7 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
     CHECK_ERROR_THEN("PyModule_GetDict failure: ", cleanup_exit();)
     
     // if you access the methods from the module itself, replace it with the callback
-    if (PyDict_SetItemString(globals, "fastflow_module", (PyObject*) callback) == -1) {
+    if (PyDict_SetItemString(globals, "fastflow", (PyObject*) callback) == -1) {
         CHECK_ERROR_THEN("PyDict_SetItemString failure: ", cleanup_exit();)
     }
     // if you access the methods by importing them from the module, replace each method with the delegate's one
@@ -121,18 +124,19 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
             if (PyObject_TypeCheck(py_result, &py_ff_constant_type) != 0) {
                 py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_result);
                 err = sendMessage(read_fd, send_fd, { 
-                    .type = _const_result->ff_const == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON, 
-                    .data = "", 
-                    .f_name = "" 
+                    .type = _const_result->ff_const == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON
                 });
                 if (err <= 0) handleError("[child] send constant response", cleanup_exit());
             } else {
+                std::string result_str = SERIALIZED_NONE;
                 // serialize response
-                auto result_str = pickl.pickle(py_result);
-                CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
+                if (py_result != Py_None) {
+                    result_str = pickl.pickle(py_result);
+                    CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
+                }
 
                 // send response
-                err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result_str, .f_name = "" });
+                err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result_str });
                 if (err <= 0) handleError("[child] send response", cleanup_exit());
 
                 Py_DECREF(py_result);
@@ -145,8 +149,6 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
 
     cleanup_exit();
 }
-
-#define SERIALIZED_EMPTY_TUPLE "(t."
 
 class base_process {
 public:    
@@ -175,18 +177,19 @@ public:
         auto node_str = pickl.pickle(node);
         CHECK_ERROR_THEN("pickle node failure: ", return -1;)
 
-        none_str = std::string(pickl.pickle(Py_None));
-        CHECK_ERROR_THEN("pickle None failure: ", return -1;)
-
         int mainToChildFD[2]; // data to be sent from main process to child process
         int childToMainFD[2]; // data to be sent from child process to main process
         // create pipes
         if (pipe(mainToChildFD) == -1) {
-            perror("pipe mainToChildFD");
+            std::string msg = "Failed to create pipe. ";
+            msg.append(strerror(errno));
+            PyErr_SetString(PyExc_Exception, msg.c_str());
             return -1;
         }
         if (pipe(childToMainFD) == -1) {
-            perror("pipe childToMainFD");
+            std::string msg = "Failed to create pipe. ";
+            msg.append(strerror(errno));
+            PyErr_SetString(PyExc_Exception, msg.c_str());
             return -1;
         }
 
@@ -196,7 +199,9 @@ public:
         PyOS_BeforeFork();
         pid = fork();
         if (pid == -1) {
-            perror("fork failed");
+            std::string msg = "Failed to fork. ";
+            msg.append(strerror(errno));
+            PyErr_SetString(PyExc_Exception, msg.c_str());
             returnValue = -1;
         } else if (pid == 0) { // child
             PyOS_AfterFork_Child();
@@ -205,7 +210,9 @@ public:
             close(childToMainFD[0]); // Close read end of childToMainFD
 
             process_body(mainToChildFD[0], childToMainFD[1], registered_callback != NULL);
-            perror("[child] shouldn't be here...");
+            std::string msg = "[child] shouldn't be here... ";
+            msg.append(strerror(errno));
+            PyErr_SetString(PyExc_Exception, msg.c_str());
             returnValue = -1;
         } else { // parent
             PyOS_AfterFork_Parent();
@@ -219,7 +226,8 @@ public:
             send_fd = mainToChildFD[1];
             read_fd = childToMainFD[0];
 
-            int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_REMOTE_PROCEDURE_CALL, .data = node_str, .f_name = "" });
+            // send serialized node
+            int err = sendMessage(read_fd, send_fd, { .data = node_str });
             if (err <= 0) handleError("send serialized node", returnValue = -1);
 
             if (err > 0 && has_svc_init) {
@@ -277,12 +285,11 @@ public:
             std::string *data = new std::string();
             parse_message_ff_send_out_to(response, &constant, &index, data);
 
-            if (constant != NULL) free(data);
             // finally perform ff_send_out_to
             bool result = registered_callback->ff_send_out_to(constant != NULL ? constant:data, index);
-
+            
             // send ff_send_out_to result
-            err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result ? "t":"f", .f_name = "" });
+            err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result ? "t":"f" });
             if (err <= 0) {
                 handleError("error sending ff_send_out_to response", );
                 return NULL;
@@ -298,7 +305,7 @@ public:
 
         // got response of svc
         if (response.type == MESSAGE_TYPE_EOS) return ff::FF_EOS;
-        if (response.type == MESSAGE_TYPE_GO_ON || response.data.compare(none_str) == 0) {
+        if (response.type == MESSAGE_TYPE_GO_ON || response.data.compare(SERIALIZED_NONE) == 0) {
             return ff::FF_GO_ON;
         }
 
@@ -314,7 +321,7 @@ public:
         }
 
         // send end of life. Meanwhile we acquire the GIL and cleanup, the process will stop
-        int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_END_OF_LIFE, .data = "", .f_name = "" });
+        int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_END_OF_LIFE });
         
         // Acquire the main GIL
         PyEval_RestoreThread(tstate);
@@ -347,7 +354,6 @@ private:
     int send_fd;
     int read_fd;
     pid_t pid;
-    std::string none_str;
     ff::ff_monode* registered_callback;
 };
 

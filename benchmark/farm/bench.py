@@ -1,23 +1,7 @@
-from fastflow_module import FFFarm, GO_ON
+from fastflow import FFFarm, EOS, GO_ON
 import argparse
 import sys
 import busy_wait
-
-"""class DummyData:
-    def __init__(self, size, val):
-        self.astr = f"a string {val}"
-        self.num = 1704 + val
-        self.adict = {
-            "val": 17 + val,
-            "str": f"string inside a dictionary {val}"
-        }
-        self.atup = (4, 17, 16, val, 15, 30)
-        self.aset = set([1, 2, 9, 6, val])
-    
-    def __str__(self):
-        return f"{self.astr}, {self.num}, {self.adict}, {self.atup}, {self.aset}"
-    
-    __repr__ = __str__"""
 
 class DummyData:
     def __init__(self, data):
@@ -35,7 +19,7 @@ class emitter():
 
     def svc(self, *args):
         if self.n_tasks == 0:
-            return
+            return EOS
         self.n_tasks -= 1
 
         return DummyData(self.data_sample)
@@ -75,8 +59,9 @@ def build_farm(n_tasks, task_ms, nworkers, data_sample, use_subinterpreters = Fa
 
     return farm
 
-def run_farm(n_tasks, task_ms, nworkers, data_sample, use_subinterpreters = False, blocking_mode = None, no_mapping = False, use_main_thread = False):
-    print(f"run farm of {nworkers} workers and {n_tasks} tasks", file=sys.stderr)
+def run_farm(n_tasks, task_ms, nworkers, data_sample, data_size, use_subinterpreters = False, blocking_mode = None, no_mapping = False, use_main_thread = False):
+    strategy = "Not using any strategy" if use_main_thread else f"Using {'subinterpreters' if use_subinterpreters else 'processes'}-based strategy"
+    print(f"Running a farm of {nworkers} workers and {n_tasks} tasks. Each task is {task_ms}ms long and has a size of {data_size} bytes. {strategy}", file=sys.stderr)
     farm = build_farm(n_tasks, task_ms, nworkers, data_sample, use_subinterpreters, use_main_thread)
     if blocking_mode is not None:
         farm.blocking_mode(blocking_mode)
@@ -90,19 +75,15 @@ def get_data_sample(task_bytes):
     result = ascii_letters * int(task_bytes / len(ascii_letters))
     return result
 
-def print_res(title, res, args):
-    print(title)
-    print(f"res[{args.bytes}] = res.get({args.bytes}, []); res.get({args.bytes}).append(({args.workers}, {res})) # bytes =", args.bytes, "ms =", args.ms)
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Process some tasks.')
+    parser = argparse.ArgumentParser(description='Run a farm of <WORKERS> workers and <TASKS> tasks. Each task is <MS>ms long and has a size of <BYTES> bytes. Using subinterpreters or multiprocessing based strategy')
     parser.add_argument('-tasks', type=int, help='Number of tasks to process', required=True)
     parser.add_argument('-workers', type=int, help='Number of workers of the farm', required=True)
-    parser.add_argument('-ms', type=int, help='Duration in milliseconds of one task', required=True)
+    parser.add_argument('-ms', type=int, help='Duration, in milliseconds, of one task', required=True)
     parser.add_argument('-bytes', type=int, help='The size, in bytes, of one task', required=True)
-    parser.add_argument('-blocking-mode', help='The blocking mode of the farm', required=False, action='store_true', default=None)
+    parser.add_argument('-blocking-mode', help='Enable blocking mode of the farm', required=False, action='store_true', default=None)
     parser.add_argument('-no-mapping', help="Disable fastflow's mapping", required=False, action='store_true')
-    group = parser.add_mutually_exclusive_group(required=False)
+    group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-proc', action='store_true', help='Use multiprocessing to process tasks')
     group.add_argument('-sub', action='store_true', help='Use subinterpreters to process tasks')
     group.add_argument('-seq', action='store_true', help='Run tasks sequentially')
@@ -110,35 +91,14 @@ if __name__ == "__main__":
 
     # test the serialization to adjust the number of bytes
     data_sample = get_data_sample(args.bytes)
-
-    if args.proc:
-        processes = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_subinterpreters = False, blocking_mode = args.blocking_mode, no_mapping = args.no_mapping)
-        print(f"done in {res}ms")
-        processes[0].append(args.workers) # x
-        processes[1].append(res) # y
-
-        print_res("processes", res, args)
-    elif args.sub:
-        subinterpreters = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_subinterpreters = True, blocking_mode = args.blocking_mode, no_mapping = args.no_mapping)
-        print(f"done in {res}ms")
-        subinterpreters[0].append(args.workers) # x
-        subinterpreters[1].append(res) # y
-
-        print_res("subinterpreters", res, args)
-    else:
-        standard = [[],[]]
-        res = run_farm(args.tasks, args.ms, args.workers, data_sample, use_subinterpreters = False, use_main_thread = True)
-        print(f"done in {res}ms")
-        standard[0].append(args.workers) # x
-        standard[1].append(res) # y
-
-        print_res("standard", res, args)
+    
+    res = run_farm(args.tasks, args.ms, args.workers, data_sample, args.bytes, use_subinterpreters = args.sub and not args.proc, blocking_mode = args.blocking_mode, no_mapping = args.no_mapping, use_main_thread = args.seq)
+    print(f"res[{args.bytes}] = res.get({args.bytes}, []); res.get({args.bytes}).append(({args.workers}, {res})) # bytes =", args.bytes, "ms =", args.ms)
 
 
-# for i in 1 2 4 8 10 12 16 20 26 30 36 42 48 54 60 64; do for size in 1024 4096 8192 16384 32768 65536 524288 1048576; do echo $i $size; done; done
-# python3.12 benchmark/farm/bench.py -tasks 128 -workers 4 -ms 100 -bytes 512000 -sub
-# python3.12 benchmark/farm/bench.py -tasks 128 -workers 4 -ms 100 -bytes 320024 -sub 2>1 | grep subinterp
-
-# for i in 1 2 4 8 10 12 16 20 26 30 36 42 48 54 60 64; do for size in 1024 4096 8192 16384 32768 65536 524288 1048576; do python3.12 benchmark/farm/bench.py -tasks 512 -workers $i -ms 500 -bytes $size -sub 2>1 | grep subinterp; done; done
+"""
+Some examples to run this benchmark
+- python3.12 benchmark/farm/bench.py -tasks 128 -workers 4 -ms 100 -bytes 512000 -sub
+- python3.12 benchmark/farm/bench.py -tasks 128 -workers 4 -ms 100 -bytes 320024 -sub 2>1 | grep subinterp
+- for i in 1 2 4 8 10 12 16 20 26 30 36 42 48 54 60 64; do for size in 1024 4096 8192 16384 32768 65536 524288 1048576; do python3.12 benchmark/farm/bench.py -tasks 512 -workers $i -ms 500 -bytes $size -sub 2>1 | grep subinterp; done; done
+"""

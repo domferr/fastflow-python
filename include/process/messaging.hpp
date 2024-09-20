@@ -18,8 +18,8 @@ enum message_type {
 
 struct Message {
     message_type type;
-    std::string data;
-    std::string f_name;
+    std::string data = "";
+    std::string f_name = "";
 };
 
 int sendMessage(int read_fd, int send_fd, const Message& message) {

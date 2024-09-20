@@ -1,4 +1,4 @@
-from fastflow_module import FFAllToAll, FFPipeline, EOS
+from fastflow import FFAllToAll, FFPipeline, EOS
 import sys
 
 """
