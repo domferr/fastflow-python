@@ -31,22 +31,14 @@ public:
         return PyObject_CallFunctionObjArgs(pkl_load_func, pickled_bytes, nullptr);
     }
 
-    std::string pickle(PyObject* object, int protocol = 5) {
+    int pickle(PyObject* object, char **str, Py_ssize_t *len, int protocol = 5) {
         PyObject* decoded_bytes = pickle_bytes(object, protocol);
-        Py_ssize_t len;
-        char *res = NULL;
-        int err = PyBytes_AsStringAndSize(decoded_bytes, &res, &len);
-        if (err < 0) return NULL;
-
-        std::string str;
-        str.assign(res, len);
-
-        Py_DECREF(decoded_bytes);
-        return str;
+        *str = NULL;
+        return PyBytes_AsStringAndSize(decoded_bytes, str, len);
     }
 
-    PyObject* unpickle(std::string &str) {
-        PyObject* pickled_bytes = PyBytes_FromStringAndSize(str.c_str(), str.length());
+    PyObject* unpickle(char* str, long size) {
+        PyObject* pickled_bytes = PyBytes_FromStringAndSize(str, size);
         PyObject* obj = unpickle_bytes(pickled_bytes);
         Py_DECREF(pickled_bytes);
         return obj;

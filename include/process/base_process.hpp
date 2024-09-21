@@ -36,7 +36,7 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
     if (err <= 0) handleError("[child] read serialized node", cleanup_exit());
 
     // deserialize Python node
-    auto node = pickl.unpickle(message.data);
+    auto node = pickl.unpickle(message.data, message.data_len);
     CHECK_ERROR_THEN("[child] unpickle node failure: ", cleanup_exit();)
 
     py_ff_callback_object* callback = (py_ff_callback_object*) PyObject_CallObject(
@@ -55,18 +55,23 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
 
         // we may have a fastflow constant as data to send out to index
         void *constant = NULL;
-        std::string pydata_str = "";
+        char *pydata_str;
+        long data_len;
         if (PyObject_TypeCheck(pydata, &py_ff_constant_type) != 0) {
             py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(pydata);
             constant = _const_result->ff_const;
         } else {
             // serialize pydata
-            pydata_str = pickl.pickle(pydata);
+            int err = pickl.pickle(pydata, &pydata_str, &data_len);
+            if (err < 0) {
+                PyErr_SetString(PyExc_Exception, "An error occurred serializing data");
+                return (PyObject*) NULL;
+            }
             if (PyErr_Occurred()) return (PyObject*) NULL;
         }
 
         Message message;
-        create_message_ff_send_out_to(message, index, constant, pydata_str);
+        create_message_ff_send_out_to(message, index, constant, pydata_str, data_len);
 
         // send response
         int err = sendMessage(read_fd, send_fd, message);
@@ -82,7 +87,7 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
             return (PyObject*) NULL;
         }
 
-        return message.data.compare("t") == 0 ? Py_True:Py_False;
+        return message.data_len == 1 && message.data[0] == 't' ? Py_True:Py_False;
     };
     
     PyObject* main_module = PyImport_ImportModule("__main__");
@@ -106,7 +111,7 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
         if (message.type == MESSAGE_TYPE_END_OF_LIFE) break;
         
         // deserialize data
-        auto py_args_tuple = pickl.unpickle(message.data);
+        auto py_args_tuple = pickl.unpickle(message.data, message.data_len);
         CHECK_ERROR_THEN("[child] deserialize data failure: ", cleanup_exit();)
         // call function
         PyObject *py_func = PyObject_GetAttrString(node, message.f_name.c_str());
@@ -122,14 +127,18 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
                 py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_result);
                 err = sendMessage(read_fd, send_fd, { 
                     .type = _const_result->ff_const == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON, 
-                    .data = "", 
+                    .data = "",
+                    .data_len = 0,
                     .f_name = "" 
                 });
                 if (err <= 0) handleError("[child] send constant response", cleanup_exit());
             } else {
                 // serialize response
-                auto result_str = pickl.pickle(py_result);
+                char *result_str;
+                long data_len;
+                err = pickl.pickle(py_result, &result_str, &data_len);
                 CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
+                if (err < 0) handleError("[child] an error occurred serializing data", cleanup_exit());
 
                 // send response
                 err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result_str, .f_name = "" });
@@ -172,11 +181,17 @@ public:
         CHECK_ERROR_THEN("load pickle and unpickle failure: ", return -1;)
 
         // serialize Python node to string
-        auto node_str = pickl.pickle(node);
+        char *node_str;
+        long data_len;
+        int err = pickl.pickle(node, &node_str, &data_len);
         CHECK_ERROR_THEN("pickle node failure: ", return -1;)
+        if (err < 0) handleError("An error occurred serializing node", return -1);
 
-        none_str = std::string(pickl.pickle(Py_None));
+        char *none_char_array;
+        err = pickl.pickle(Py_None, &none_char_array, &data_len);
         CHECK_ERROR_THEN("pickle None failure: ", return -1;)
+        if (err < 0) handleError("An error occurred serializing None", return -1);
+        none_str.assign(none_char_array, data_len);
 
         int mainToChildFD[2]; // data to be sent from main process to child process
         int childToMainFD[2]; // data to be sent from child process to main process
@@ -224,14 +239,13 @@ public:
 
             if (err > 0 && has_svc_init) {
                 Message response;
-                auto empty_tuple = std::string(SERIALIZED_EMPTY_TUPLE);
-                int err = remote_procedure_call(send_fd, read_fd, empty_tuple, "svc_init", response);
+                int err = remote_procedure_call(send_fd, read_fd, SERIALIZED_EMPTY_TUPLE, 3, "svc_init", response);
                 if (err <= 0) {
                     handleError("read result of remote call of svc_init", );
                 } else {
                     // Hold the main GIL
                     PyEval_RestoreThread(tstate);
-                    PyObject *svc_init_result = pickl.unpickle(response.data);
+                    PyObject *svc_init_result = pickl.unpickle(response.data, response.data_len);
                     CHECK_ERROR_THEN("unpickle svc_init_result failure: ", returnValue = -1;)
 
                     returnValue = 0;
@@ -254,10 +268,13 @@ public:
 
     void* svc(void *arg) {
         // arg may be equal to ff::FF_GO_ON in case of a node of a first set of an a2a that hasn't input channels
-        std::string serialized_data = arg == NULL || arg == ff::FF_GO_ON ? SERIALIZED_EMPTY_TUPLE:*reinterpret_cast<std::string*>(arg);
+        std::pair<char*, long>* argpair = arg == NULL || arg == ff::FF_GO_ON ? nullptr:reinterpret_cast<std::pair<char*, long>*>(arg);
+        if (argpair == nullptr) {
+            argpair = new std::pair<char*, long>(SERIALIZED_EMPTY_TUPLE, 3);
+        }
 
         Message response;
-        int err = remote_procedure_call(send_fd, read_fd, serialized_data, "svc", response);
+        int err = remote_procedure_call(send_fd, read_fd, argpair->first, argpair->second, "svc", response);
         if (err <= 0) {
             handleError("remote call of svc", );
             return NULL;
@@ -280,9 +297,11 @@ public:
             if (constant != NULL) free(data);
             // finally perform ff_send_out_to
             bool result = registered_callback->ff_send_out_to(constant != NULL ? constant:data, index);
-
+            
+            char result_data[1];
+            result_data[0] = result ? 't':'f';
             // send ff_send_out_to result
-            err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result ? "t":"f", .f_name = "" });
+            err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result_data, .data_len = 1, .f_name = "" });
             if (err <= 0) {
                 handleError("error sending ff_send_out_to response", );
                 return NULL;
@@ -298,18 +317,17 @@ public:
 
         // got response of svc
         if (response.type == MESSAGE_TYPE_EOS) return ff::FF_EOS;
-        if (response.type == MESSAGE_TYPE_GO_ON || response.data.compare(none_str) == 0) {
+        if (response.type == MESSAGE_TYPE_GO_ON || strcmp(response.data, none_str.c_str()) == 0) {
             return ff::FF_GO_ON;
         }
 
-        return new std::string(response.data);
+        return new std::pair<char*, long>(response.data, response.data_len);
     }
 
     void svc_end() {
         if (has_svc_end) {
             Message response;
-            auto empty_tuple = std::string(SERIALIZED_EMPTY_TUPLE);
-            int err = remote_procedure_call(send_fd, read_fd, empty_tuple, "svc_end", response);
+            int err = remote_procedure_call(send_fd, read_fd, SERIALIZED_EMPTY_TUPLE, 3, "svc_end", response);
             if (err <= 0) handleError("read result of remote call of svc_end", );
         }
 

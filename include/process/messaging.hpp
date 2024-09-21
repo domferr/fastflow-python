@@ -18,7 +18,9 @@ enum message_type {
 
 struct Message {
     message_type type;
-    std::string data;
+    //std::string data;
+    char *data;
+    long data_len;
     std::string f_name;
 };
 
@@ -29,11 +31,10 @@ int sendMessage(int read_fd, int send_fd, const Message& message) {
     }
 
     // send data
-    uint32_t dataSize = message.data.length();
-    if (write(send_fd, &dataSize, sizeof(dataSize)) == -1) {
+    if (write(send_fd, &message.data_len, sizeof(message.data_len)) == -1) {
         handleError("write data size", return -1);
     }
-    if (dataSize > 0 && writen(send_fd, message.data.c_str(), dataSize) == -1) {
+    if (message.data_len > 0 && writen(send_fd, message.data, message.data_len) == -1) {
         handleError("write data", return -1);
     }
 
@@ -60,20 +61,14 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     if (res <= 0) handleError("read type", return res);
 
     // recv data
-    uint32_t dataSize;
-    res = read(read_fd, &dataSize, sizeof(dataSize));
+    res = read(read_fd, &message.data_len, sizeof(message.data_len));
     if (res <= 0) handleError("read data size", return res);
 
-    char* bufferData = new char[dataSize + 1];
-    if (dataSize > 0) {
-        res = readn(read_fd, bufferData, dataSize);
+    message.data = new char[message.data_len];
+    if (message.data_len > 0) {
+        res = readn(read_fd, message.data, message.data_len);
         if (res <= 0) handleError("read data", return res);
     }
-    
-    bufferData[dataSize] = '\0';
-    //message.data = std::string(bufferData);
-    message.data.assign(bufferData, dataSize);
-    delete[] bufferData;
     
     // recv f_name
     uint32_t fnameSize;
@@ -97,13 +92,14 @@ int receiveMessage(int read_fd, int send_fd, Message& message) {
     return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
 }
 
-int remote_procedure_call(int send_fd, int read_fd, std::string &data, const char *f_name, Message &response) {
+int remote_procedure_call(int send_fd, int read_fd, char *data, long data_len, const char *f_name, Message &response) {
     // they are -1 if an error occurred during svc_init or svc
     if (send_fd == -1 || read_fd == -1) return -1;
 
     int err = sendMessage(read_fd, send_fd, { 
         .type = MESSAGE_TYPE_REMOTE_PROCEDURE_CALL, 
-        .data = data, 
+        .data = data,
+        .data_len = data_len,
         .f_name = f_name 
     });
     if (err <= 0) return err;
@@ -111,7 +107,7 @@ int remote_procedure_call(int send_fd, int read_fd, std::string &data, const cha
     return receiveMessage(read_fd, send_fd, response);
 }
 
-void create_message_ff_send_out_to(Message &message, int index, void* &constant, std::string &data) {
+void create_message_ff_send_out_to(Message &message, int index, void* &constant, char *data, long data_len) {
     if (constant != NULL && constant != ff::FF_EOS 
         && constant != ff::FF_GO_ON) {
             throw "fastflow constant not supported";
@@ -120,20 +116,27 @@ void create_message_ff_send_out_to(Message &message, int index, void* &constant,
     message.type = MESSAGE_TYPE_REMOTE_PROCEDURE_CALL;
     message.f_name = "ff_send_out_to";
     std::string index_str = std::to_string(index);
-    message.data.erase();
-    message.data.reserve(index_str.length() + 8 + data.length()); // 8 is just to be sure there is enough space for the constant
-    message.data.append(index_str);
-    message.data.append("~");
-    message.data.append(constant != NULL ? "t":"f");
-    message.data.append(constant != NULL ? std::to_string(constant == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON):data);
+    
+    std::string str;
+    str.reserve(index_str.length() + 8 + data_len); // 8 is just to be sure there is enough space for the constant
+    str.append(index_str);
+    str.append("~");
+    str.append(constant != NULL ? "t":"f");
+    str.append(constant != NULL ? std::to_string(constant == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON):data);
+    message.data = new char[str.length() + 1];
+    memcpy(message.data, str.c_str(), str.length());
+    message.data[str.length()] = '\0';
+    message.data_len = str.length();
 }
 
 void parse_message_ff_send_out_to(Message &message, void **constant, int *index, std::string *data) {
-    int dividerPos = message.data.find('~');
-    *index = std::stoi(message.data.substr(0, dividerPos));
-    if (message.data.at(dividerPos+1) == 't') {
+    std::string str;
+    str.assign(message.data, message.data_len);
+    int dividerPos = str.find('~');
+    *index = std::stoi(str.substr(0, dividerPos));
+    if (str.at(dividerPos+1) == 't') {
         *data = "";
-        std::string inner_data = message.data.substr(dividerPos+2, message.data.length() - dividerPos - 1);
+        std::string inner_data = str.substr(dividerPos+2, str.length() - dividerPos - 1);
         if (inner_data.compare(std::to_string(MESSAGE_TYPE_EOS)) == 0) {
             *constant = ff::FF_EOS;
         }
@@ -142,7 +145,7 @@ void parse_message_ff_send_out_to(Message &message, void **constant, int *index,
         }
     } else {
         *constant = NULL;
-        *data = message.data.substr(dividerPos+2, message.data.length() - dividerPos - 1);
+        *data = str.substr(dividerPos+2, str.length() - dividerPos - 1);
     }
 }
 
