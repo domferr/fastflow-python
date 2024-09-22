@@ -5,6 +5,8 @@
 #include <ff/ff.hpp>
 #include <iostream>
 #include <sys/wait.h>
+#include <typeinfo>
+#include <unordered_map>
 #include "pickle.hpp"
 #include "debugging.hpp"
 #include "../py_ff_callback.hpp"
@@ -12,10 +14,13 @@
 #include "object.h"
 #include "../py_ff_constant.hpp"
 
+#define handleError(msg, then) do { perror(msg); then; } while(0)
+
 #define SERIALIZED_EMPTY_TUPLE "(t."
 #define SERIALIZED_NONE "N."
 
 void process_body(int read_fd, int send_fd, bool isMultiOutput) {
+    Messaging messaging{ send_fd, read_fd };
     Message message;
 
     // Load pickling/unpickling functions
@@ -35,17 +40,18 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
     CHECK_ERROR_THEN("[child] load pickle/unpickle failure: ", cleanup_exit();)
     
     // receive serialized node
-    int err = receiveMessage(read_fd, send_fd, message);
+    int err = messaging.recv_message(message);
     if (err <= 0) handleError("[child] read serialized node", cleanup_exit());
 
     // deserialize Python node
-    auto node = pickl.unpickle(message.data);
+    auto node = pickl.unpickle(message.data[0]);
     CHECK_ERROR_THEN("[child] unpickle node failure: ", cleanup_exit();)
 
+    // create the callback object
     py_ff_callback_object* callback = (py_ff_callback_object*) PyObject_CallObject(
         (PyObject *) &py_ff_callback_type, NULL
     );
-    callback->ff_send_out_to_callback = [isMultiOutput, &pickl, read_fd, send_fd](PyObject* pydata, int index) {
+    callback->ff_send_out_to_callback = [isMultiOutput, &pickl, &messaging](PyObject* pydata, int index) {
         if (!isMultiOutput) {
             PyErr_SetString(PyExc_Exception, "Operation not available. This is not a multi output node");
             return (PyObject*) NULL;
@@ -56,36 +62,18 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
             return (PyObject*) NULL;
         }
 
-        // we may have a fastflow constant as data to send out to index
-        void *constant = NULL;
-        std::string pydata_str = "";
+        Message response;
         if (PyObject_TypeCheck(pydata, &py_ff_constant_type) != 0) {
+            // we may have a fastflow constant as data to send out to index
             py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(pydata);
-            constant = _const_result->ff_const;
+            int err = messaging.call_remote(response, "ff_send_out_to", index, _const_result->ff_const);
         } else {
-            // serialize pydata
-            pydata_str = pickl.pickle(pydata);
+            int err = messaging.call_remote(response, "ff_send_out_to", index, pickl.pickle(pydata));
             if (PyErr_Occurred()) return (PyObject*) NULL;
         }
 
-        Message message;
-        create_message_ff_send_out_to(message, index, constant, pydata_str);
-
-        // send response
-        int err = sendMessage(read_fd, send_fd, message);
-        if (err <= 0) {
-            PyErr_SetString(PyExc_Exception, "Unable to communicate ff_send_out_to request");
-            return (PyObject*) NULL;
-        }
-        
-        // receive response
-        err = receiveMessage(read_fd, send_fd, message);
-        if (err <= 0) {
-            PyErr_SetString(PyExc_Exception, "Unable to get ff_send_out_to response");
-            return (PyObject*) NULL;
-        }
-
-        return message.data.compare("t") == 0 ? Py_True:Py_False;
+        auto result = messaging.parse_data<bool>(response.data);
+        return std::get<0>(result) ? Py_True:Py_False;
     };
     
     PyObject* main_module = PyImport_ImportModule("__main__");
@@ -103,14 +91,13 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
     }
 
     while(err > 0) {
-        err = receiveMessage(read_fd, send_fd, message);
+        err = messaging.recv_message(message);
         if (err <= 0) handleError("[child] read next", cleanup_exit());
-        
         if (message.type == MESSAGE_TYPE_END_OF_LIFE) break;
         
         // deserialize data
-        auto py_args_tuple = pickl.unpickle(message.data);
-        CHECK_ERROR_THEN("[child] deserialize data failure: ", cleanup_exit();)
+        auto py_args_tuple = pickl.unpickle(message.data[0]);
+        CHECK_ERROR_THEN("[child] deserialize data failure: ", std::cout << message.data[0] << std::endl; cleanup_exit();)
         // call function
         PyObject *py_func = PyObject_GetAttrString(node, message.f_name.c_str());
         CHECK_ERROR_THEN("[child] get node function: ", cleanup_exit();)
@@ -123,20 +110,18 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
             // we may have a fastflow constant as result
             if (PyObject_TypeCheck(py_result, &py_ff_constant_type) != 0) {
                 py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_result);
-                err = sendMessage(read_fd, send_fd, { 
-                    .type = _const_result->ff_const == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON
-                });
+                err = messaging.send_response(_const_result->ff_const);
                 if (err <= 0) handleError("[child] send constant response", cleanup_exit());
             } else {
-                std::string result_str = SERIALIZED_NONE;
-                // serialize response
-                if (py_result != Py_None) {
-                    result_str = pickl.pickle(py_result);
+                // send response
+                if (py_result == Py_None) { // map None to GO_ON
+                    // send GO_ON
+                    err = messaging.send_response(ff::FF_GO_ON);
+                } else {
+                    // send serialized response
+                    err = messaging.send_response(pickl.pickle(py_result));
                     CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
                 }
-
-                // send response
-                err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result_str });
                 if (err <= 0) handleError("[child] send response", cleanup_exit());
 
                 Py_DECREF(py_result);
@@ -152,7 +137,7 @@ void process_body(int read_fd, int send_fd, bool isMultiOutput) {
 
 class base_process {
 public:    
-    base_process(PyObject* node): node(node), send_fd(-1), read_fd(-1), registered_callback(NULL) {
+    base_process(PyObject* node): node(node), messaging(-1, -1), registered_callback(NULL) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         Py_INCREF(node);
@@ -223,23 +208,21 @@ public:
             close(mainToChildFD[0]); // Close read end of mainToChildFD
             close(childToMainFD[1]); // Close write end of childToMainFD
 
-            send_fd = mainToChildFD[1];
-            read_fd = childToMainFD[0];
+            messaging = { mainToChildFD[1], childToMainFD[0] };
 
             // send serialized node
-            int err = sendMessage(read_fd, send_fd, { .data = node_str });
+            int err = messaging.send_data(node_str);
             if (err <= 0) handleError("send serialized node", returnValue = -1);
 
             if (err > 0 && has_svc_init) {
                 Message response;
-                auto empty_tuple = std::string(SERIALIZED_EMPTY_TUPLE);
-                int err = remote_procedure_call(send_fd, read_fd, empty_tuple, "svc_init", response);
+                int err = messaging.call_remote(response, "svc_init", SERIALIZED_EMPTY_TUPLE);
                 if (err <= 0) {
                     handleError("read result of remote call of svc_init", );
                 } else {
                     // Hold the main GIL
                     PyEval_RestoreThread(tstate);
-                    PyObject *svc_init_result = pickl.unpickle(response.data);
+                    PyObject *svc_init_result = pickl.unpickle(response.data[0]);
                     CHECK_ERROR_THEN("unpickle svc_init_result failure: ", returnValue = -1;)
 
                     returnValue = 0;
@@ -265,12 +248,13 @@ public:
         std::string serialized_data = arg == NULL || arg == ff::FF_GO_ON ? SERIALIZED_EMPTY_TUPLE:*reinterpret_cast<std::string*>(arg);
 
         Message response;
-        int err = remote_procedure_call(send_fd, read_fd, serialized_data, "svc", response);
+        int err = messaging.call_remote(response, "svc", serialized_data);
+        //int err = messaging.remote_procedure_call(serialized_data, "svc", response);
         if (err <= 0) {
             handleError("remote call of svc", );
             return NULL;
         }
-
+        
         while(response.type == MESSAGE_TYPE_REMOTE_PROCEDURE_CALL) {
             // the only supported remote procedure call from the child process
             // if the call of ff_send_out_to (as of today...)
@@ -280,23 +264,20 @@ public:
             }
 
             // parse received ff_send_out_to request
-            int index;
-            void *constant = NULL;
-            std::string *data = new std::string();
-            parse_message_ff_send_out_to(response, &constant, &index, data);
-
+            std::tuple<int, std::string> args = messaging.parse_data<int, std::string>(response.data);
+            void* constant = deserialize<void*>(std::get<1>(args));
             // finally perform ff_send_out_to
-            bool result = registered_callback->ff_send_out_to(constant != NULL ? constant:data, index);
+            bool result = registered_callback->ff_send_out_to(constant == NULL ? (void*) new std::string(std::get<1>(args)):constant, std::get<0>(args));
             
             // send ff_send_out_to result
-            err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_RESPONSE, .data = result ? "t":"f" });
+            err = messaging.send_response(result);
             if (err <= 0) {
                 handleError("error sending ff_send_out_to response", );
                 return NULL;
             }
 
             // prepare for next iteration
-            err = receiveMessage(read_fd, send_fd, response);
+            err = messaging.recv_message(response);
             if (err <= 0) {
                 handleError("waiting for svc response", );
                 return NULL;
@@ -304,24 +285,21 @@ public:
         }
 
         // got response of svc
-        if (response.type == MESSAGE_TYPE_EOS) return ff::FF_EOS;
-        if (response.type == MESSAGE_TYPE_GO_ON || response.data.compare(SERIALIZED_NONE) == 0) {
-            return ff::FF_GO_ON;
-        }
+        void* constant = deserialize<void*>(response.data[0]);
+        if (constant != NULL) return constant;
 
-        return new std::string(response.data);
+        return new std::string(response.data[0]);
     }
 
     void svc_end() {
         if (has_svc_end) {
             Message response;
-            auto empty_tuple = std::string(SERIALIZED_EMPTY_TUPLE);
-            int err = remote_procedure_call(send_fd, read_fd, empty_tuple, "svc_end", response);
+            int err = messaging.call_remote(response, "svc_end", SERIALIZED_EMPTY_TUPLE);
             if (err <= 0) handleError("read result of remote call of svc_end", );
         }
 
         // send end of life. Meanwhile we acquire the GIL and cleanup, the process will stop
-        int err = sendMessage(read_fd, send_fd, { .type = MESSAGE_TYPE_END_OF_LIFE });
+        int err = messaging.eol();
         
         // Acquire the main GIL
         PyEval_RestoreThread(tstate);
@@ -333,10 +311,7 @@ public:
         PyEval_SaveThread();
         waitpid(pid, nullptr, 0);
 
-        if (send_fd > 0) close(send_fd);
-        send_fd = -1;
-        if (read_fd > 0) close(read_fd);
-        send_fd = -1;
+        messaging.closefds();
     }
 
     void register_callback(ff::ff_monode* cb_node) {
@@ -351,8 +326,7 @@ private:
     PyThreadState *tstate;
     PyObject* node;
     bool has_svc_end;
-    int send_fd;
-    int read_fd;
+    Messaging messaging;
     pid_t pid;
     ff::ff_monode* registered_callback;
 };

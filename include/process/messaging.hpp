@@ -4,146 +4,184 @@
 #include <Python.h>
 #include "debugging.hpp"
 #include <ff/distributed/ff_network.hpp> // import writen and readn
-
-#define handleError(msg, then) do { perror(msg); then; } while(0)
+#include <iostream>
+#include <sstream>
 
 enum message_type {
-    MESSAGE_TYPE_RESPONSE = 1,
+    MESSAGE_TYPE_RAW_DATA = 1,
     MESSAGE_TYPE_REMOTE_PROCEDURE_CALL,
-    MESSAGE_TYPE_GO_ON,
-    MESSAGE_TYPE_EOS,
-    MESSAGE_TYPE_ACK,
-    MESSAGE_TYPE_END_OF_LIFE
+    MESSAGE_TYPE_RESPONSE,
+    MESSAGE_TYPE_END_OF_LIFE,
 };
 
 struct Message {
     message_type type;
-    std::string data = "";
+    std::vector<std::string> data;
     std::string f_name = "";
 };
 
-int sendMessage(int read_fd, int send_fd, const Message& message) {
-    // send type
-    if (write(send_fd, &message.type, sizeof(message.type)) == -1) {
-        handleError("write type", return -1);
-    }
 
-    // send data
-    uint32_t dataSize = message.data.length();
-    if (write(send_fd, &dataSize, sizeof(dataSize)) == -1) {
-        handleError("write data size", return -1);
-    }
-    if (dataSize > 0 && writen(send_fd, message.data.c_str(), dataSize) == -1) {
-        handleError("write data", return -1);
-    }
-
-    // send f_name
-    uint32_t fnameSize = message.f_name.length();
-    if (write(send_fd, &fnameSize, sizeof(fnameSize)) == -1) {
-        handleError("write f_name size", return -1);
-    }
-
-    if (fnameSize > 0 && writen(send_fd, message.f_name.c_str(), fnameSize) == -1) {
-        handleError("write f_name", return -1);
-    }
-
-    int ack; 
-    int err = read(read_fd, &ack, sizeof(ack));
-    if (err <= 0) handleError("error receiving ACK", return err);
-
-    return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
+// Serialize any argument
+template<typename T>
+std::string serialize(const T& arg) {
+    std::ostringstream oss;
+    oss << arg;
+    return oss.str();
 }
 
-int receiveMessage(int read_fd, int send_fd, Message& message) {
-    // recv type
-    int res = read(read_fd, &message.type, sizeof(message.type));
-    if (res <= 0) handleError("read type", return res);
-
-    // recv data
-    uint32_t dataSize;
-    res = read(read_fd, &dataSize, sizeof(dataSize));
-    if (res <= 0) handleError("read data size", return res);
-
-    char* bufferData = new char[dataSize + 1];
-    if (dataSize > 0) {
-        res = readn(read_fd, bufferData, dataSize);
-        if (res <= 0) handleError("read data", return res);
-    }
-    
-    bufferData[dataSize] = '\0';
-    //message.data = std::string(bufferData);
-    message.data.assign(bufferData, dataSize);
-    delete[] bufferData;
-    
-    // recv f_name
-    uint32_t fnameSize;
-    res = read(read_fd, &fnameSize, sizeof(fnameSize));
-    if (res <= 0) handleError("read fname size", return res);
-
-    char* bufferFname = new char[fnameSize + 1];
-    if (fnameSize > 0) {
-        res = readn(read_fd, bufferFname, fnameSize);
-        if (res <= 0) handleError("read fname", return res);
-    }
-    
-    bufferFname[fnameSize] = '\0';
-    message.f_name = std::string(bufferFname);
-    delete[] bufferFname;
-
-    int ack = 17; 
-    res = write(send_fd, &ack, sizeof(ack)); 
-    if (res == -1) handleError("error sending ACK", return res);
-
-    return 1; // 0 = EOF, -1 = ERROR, 1 = SUCCESS
+template <>
+// Serialize a string argument by returning the string
+inline std::string serialize<std::string>(const std::string& arg) {
+    return arg;
 }
 
-int remote_procedure_call(int send_fd, int read_fd, std::string &data, const char *f_name, Message &response) {
-    // they are -1 if an error occurred during svc_init or svc
-    if (send_fd == -1 || read_fd == -1) return -1;
-
-    int err = sendMessage(read_fd, send_fd, { 
-        .type = MESSAGE_TYPE_REMOTE_PROCEDURE_CALL, 
-        .data = data, 
-        .f_name = f_name 
-    });
-    if (err <= 0) return err;
-
-    return receiveMessage(read_fd, send_fd, response);
+// Deserialize any argument
+template<typename T>
+T deserialize(const std::string& data) {
+    std::istringstream iss(data);
+    T arg;
+    iss >> arg;
+    return arg;
 }
 
-void create_message_ff_send_out_to(Message &message, int index, void* &constant, std::string &data) {
-    if (constant != NULL && constant != ff::FF_EOS 
-        && constant != ff::FF_GO_ON) {
-            throw "fastflow constant not supported";
+template <>
+// Deserialize a string argument by returning the string
+inline std::string deserialize<std::string>(const std::string& data) {
+    return data;
+}
+
+class Messaging {
+public:
+    Messaging(int send_fd, int read_fd) : send_fd(send_fd), read_fd(read_fd) {}
+
+    inline int send_data(std::string &data) {
+        return send_message(MESSAGE_TYPE_RAW_DATA, "", data);
     }
 
-    message.type = MESSAGE_TYPE_REMOTE_PROCEDURE_CALL;
-    message.f_name = "ff_send_out_to";
-    std::string index_str = std::to_string(index);
-    message.data.erase();
-    message.data.reserve(index_str.length() + 8 + data.length()); // 8 is just to be sure there is enough space for the constant
-    message.data.append(index_str);
-    message.data.append("~");
-    message.data.append(constant != NULL ? "t":"f");
-    message.data.append(constant != NULL ? std::to_string(constant == ff::FF_EOS ? MESSAGE_TYPE_EOS:MESSAGE_TYPE_GO_ON):data);
-}
+    template<typename... Args>
+    inline int send_response(Args... args) {
+        return send_message(MESSAGE_TYPE_RESPONSE, "", args...);
+    }
 
-void parse_message_ff_send_out_to(Message &message, void **constant, int *index, std::string *data) {
-    int dividerPos = message.data.find('~');
-    *index = std::stoi(message.data.substr(0, dividerPos));
-    if (message.data.at(dividerPos+1) == 't') {
-        *data = "";
-        std::string inner_data = message.data.substr(dividerPos+2, message.data.length() - dividerPos - 1);
-        if (inner_data.compare(std::to_string(MESSAGE_TYPE_EOS)) == 0) {
-            *constant = ff::FF_EOS;
+    template<typename... Args>
+    int call_remote(Message &response, const char* fname, Args... args) {
+        start_call_remote(fname, args...);
+        return recv_message(response);
+    }
+
+    template<typename... Args>
+    inline int start_call_remote(const char* fname, Args... args) {
+        return send_message(MESSAGE_TYPE_REMOTE_PROCEDURE_CALL, fname, args...);
+    }
+
+    // Function to parse the remote call string and deserialize arguments
+    template<typename... Args>
+    std::tuple<Args...> parse_data(const std::vector<std::string>& data) {        
+        // Deserialize each token back to its respective type and return as a tuple
+        return call_remote_to_tuple<Args...>(std::index_sequence_for<Args...>{}, data);
+    }
+
+    inline int eol() {
+        return send_message(MESSAGE_TYPE_END_OF_LIFE, "");
+    }
+
+    int recv_message(Message& message) {
+        // recv type
+        int res = read(read_fd, &message.type, sizeof(message.type));
+        if (res <= 0) return res;
+
+        int data_vector_size; 
+        res = read(read_fd, &data_vector_size, sizeof(data_vector_size));
+        if (res <= 0) return res;
+        message.data.resize(data_vector_size);
+        
+        // recv the vector of data
+        for (size_t i = 0; i < data_vector_size; i++) {
+            // recv data i
+            uint32_t dataSize;
+            res = read(read_fd, &dataSize, sizeof(dataSize));
+            if (res <= 0) return res;
+
+            char* bufferData = new char[dataSize + 1];
+            if (dataSize > 0) {
+                res = readn(read_fd, bufferData, dataSize);
+                if (res <= 0) return res;
+            }
+            
+            bufferData[dataSize] = '\0';
+            message.data[i].assign(bufferData, dataSize);
+            delete[] bufferData;
         }
-        if (inner_data.compare(std::to_string(MESSAGE_TYPE_GO_ON)) == 0) {
-            *constant = ff::FF_GO_ON;
+        
+        // recv f_name
+        uint32_t fnameSize;
+        res = read(read_fd, &fnameSize, sizeof(fnameSize));
+        if (res <= 0) return res;
+
+        char* bufferFname = new char[fnameSize + 1];
+        if (fnameSize > 0) {
+            res = readn(read_fd, bufferFname, fnameSize);
+            if (res <= 0) return res;
         }
-    } else {
-        *constant = NULL;
-        *data = message.data.substr(dividerPos+2, message.data.length() - dividerPos - 1);
+        
+        bufferFname[fnameSize] = '\0';
+        message.f_name = std::string(bufferFname);
+        delete[] bufferFname;
+
+        int ack = 17; 
+        return write(send_fd, &ack, sizeof(ack)); // 0 = EOF, -1 = ERROR, >= 1 = SUCCESS
     }
-}
+
+    inline bool is_closed() {
+        return send_fd == -1 || read_fd == -1;
+    }
+
+    void closefds() {
+        if (send_fd > 0) close(send_fd);
+        if (read_fd > 0) close(read_fd);
+        send_fd = -1;
+        send_fd = -1;
+    }
+
+private:
+    int send_fd;
+    int read_fd;
+
+    // Function to create a tuple of deserialized arguments
+    template<typename... Args, std::size_t... Is>
+    std::tuple<Args...> call_remote_to_tuple(std::index_sequence<Is...>, const std::vector<std::string> &data) {
+        // idea from https://stackoverflow.com/a/59195736
+        return std::make_tuple(deserialize<Args>(data[Is])...);
+    }
+
+    template<typename... Args>
+    int send_message(message_type type, std::string f_name, Args... args) {
+        std::vector<std::string> serialized_args = { serialize(args)... };
+        
+        // send type
+        if (write(send_fd, &type, sizeof(type)) == -1) return -1;
+
+        // send vector data size
+        int data_vector_size = serialized_args.size();
+        if (write(send_fd, &data_vector_size, sizeof(data_vector_size)) == -1) return -1;
+
+        // send vector of data
+        for (size_t i = 0; i < serialized_args.size(); i++) {
+            // send data
+            auto data = serialized_args[i];
+            uint32_t dataSize = data.size();
+            if (write(send_fd, &dataSize, sizeof(dataSize)) == -1) return -1;
+            if (dataSize > 0 && writen(send_fd, data.c_str(), dataSize) == -1) return -1;
+        }
+
+        // send f_name
+        uint32_t fnameSize = f_name.length();
+        if (write(send_fd, &fnameSize, sizeof(fnameSize)) == -1) return -1;
+        if (fnameSize > 0 && writen(send_fd, f_name.c_str(), fnameSize) == -1) return -1;
+
+        int ack; 
+        return read(read_fd, &ack, sizeof(ack)); // 0 = EOF, -1 = ERROR, >= 1 = SUCCESS
+    }
+};
 
 #endif  //MESSAGING_HPP

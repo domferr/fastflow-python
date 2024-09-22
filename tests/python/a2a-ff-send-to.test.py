@@ -1,4 +1,4 @@
-from fastflow import FFAllToAll, EOS, ff_send_out_to
+from fastflow import FFAllToAll, EOS, GO_ON, ff_send_out_to
 import sys
 
 """
