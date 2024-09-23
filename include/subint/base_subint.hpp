@@ -8,8 +8,9 @@
 #include "error_macros.hpp"
 #include "pickle.hpp"
 #include "debugging.hpp"
-#include "../py_ff_callback.hpp"
+#include "py_ff_callback.hpp"
 #include "py_ff_constant.hpp"
+#include "python_utils.hpp"
 
 #if PY_MINOR_VERSION >= 12
 class base_subint {
@@ -17,15 +18,11 @@ public:
     base_subint(PyObject* node, bool is_multi_output = true): node(node), svc_func(nullptr), pickl(nullptr) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
-        svc_func = PyObject_GetAttrString(node, "svc");
-        CHECK_ERROR("py_ff_monode_subint failure: ")
+        Py_INCREF(node);
     }
 
     int svc_init() {
         TIMESTART(svc_init_start_time);
-        // associate a new thread state with ff_monode's thread
-        PyThreadState* cached_tstate = tstate;
-        tstate = PyThreadState_New(cached_tstate->interp);
 
         // Hold the main GIL
         PyEval_RestoreThread(tstate);
@@ -35,44 +32,21 @@ public:
         CHECK_ERROR_THEN("load pickle and unpickle failure: ", return -1;)
 
         // serialize Python node to bytes
-        auto node_ser = pickling_main.pickle_bytes(node);
+        auto node_ser = pickling_main.pickle(node);
         CHECK_ERROR_THEN("pickle node failure: ", return -1;)
-        
-        PyObject* main_module = PyImport_ImportModule("__main__");
-        CHECK_ERROR_THEN("PyImport_ImportModule __main__ failure: ", return -1;)
-        PyObject* globals = PyModule_GetDict(main_module);
-        CHECK_ERROR_THEN("PyModule_GetDict failure: ", return -1;)
-        
-        // run code to compute global declarations, imports, etc...
-        PyRun_String(R"PY(
-glb = [[k,v] for k,v in globals().items() if not (k.startswith('__') and k.endswith('__'))]
 
-import inspect
-__ff_res = ""
-for [k, v] in glb:
-    try:
-        if inspect.ismodule(v):
-            if v.__package__:
-                __ff_res += f"from {v.__package__} import {k}"
-            else: # v.__package__ is empty the module and the package are the same
-                __ff_res += f"import {k}"
-        elif inspect.isclass(v) or inspect.isfunction(v):
-            __ff_res += inspect.getsource(v)
-        # else:
-        #    __ff_res += f"{k} = {v}"
-        __ff_res += "\n"
-    except:
-        pass
-        )PY", Py_file_input, globals, NULL);
-        CHECK_ERROR_THEN("PyRun_String failure: ", return -1;)
+        PyObject* globals = get_globals();
+        PyObject* py_env_str = PyDict_GetItemString(globals, "__ff_environment_string");
+        Py_INCREF(py_env_str);
+        auto env_str = PyUnicode_AsUTF8(PyObject_Str(py_env_str));
 
-        PyObject* result = PyDict_GetItemString(globals, "__ff_res");
-        std::string env_str = std::string(PyUnicode_AsUTF8(PyObject_Str(result)));
-        
         // Cleanup of objects created
-        Py_DECREF(result);
-        //todo Py_DECREF(globals);
         pickling_main.~pickling();
+
+        // associate a new thread state with fastflow node's thread
+        tstate = PyThreadState_New(tstate->interp);
+
+        TIMESTART(svc_init_create_interpr);
 
         // Create a new sub-interpreter with its own GIL
         PyInterpreterConfig sub_interp_config = {
@@ -85,7 +59,7 @@ for [k, v] in glb:
             .gil = PyInterpreterConfig_OWN_GIL,
         };
         // save thread state with main interpreter
-        cached_tstate = tstate;
+        PyThreadState* cached_tstate = tstate;
         // create subinterpreter (and drop the main GIL and acquire the new GIL)
         PyStatus status = Py_NewInterpreterFromConfig(&tstate, &sub_interp_config);
         /* The new interpreter is now active in the current thread */
@@ -97,24 +71,14 @@ for [k, v] in glb:
             return -1;
         }
 
-        int returnValue = 0;
         // cleanup thread state with main interpreter
         PyThreadState_Clear(cached_tstate);
         PyThreadState_Delete(cached_tstate);
-        
-        // Load pickling/unpickling functions IN THE NEW INTERPRETER
-        pickl = new pickling();
-        CHECK_ERROR_THEN("load pickle and unpickle failure: ", returnValue = -1;)
+
+        LOGELAPSED("svc_init_create_interpr time ", svc_init_create_interpr);
 
         // recreate the global declarations and imports
-        PyRun_SimpleString(env_str.c_str());
-
-        // deserialize Python node
-        // overwrite the old node (from the main interpreter) with the new one (in this subinterpreter)
-        node = pickl->unpickle_bytes(node_ser);
-        CHECK_ERROR_THEN("unpickle node failure: ", returnValue = -1;)
-
-        svc_func = PyObject_GetAttrString(node, "svc");
+        PyRun_SimpleString(env_str);
 
         py_ff_callback_object* callback = (py_ff_callback_object*) PyObject_CallObject(
             (PyObject *) &py_ff_callback_type, NULL
@@ -123,11 +87,9 @@ for [k, v] in glb:
             return this->py_ff_send_out_to(pydata, index);
         };
         
-        main_module = PyImport_ImportModule("__main__");
-        CHECK_ERROR_THEN("PyImport_ImportModule __main__ failure: ", returnValue = -1;)
-        globals = PyModule_GetDict(main_module);
-        CHECK_ERROR_THEN("PyModule_GetDict failure: ", returnValue = -1;)
+        int returnValue = 0;
         
+        globals = get_globals();
         // if you access the methods from the module itself, replace it with the callback
         if (PyDict_SetItemString(globals, "fastflow", (PyObject*) callback) == -1) {
             CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
@@ -137,6 +99,7 @@ for [k, v] in glb:
             CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
         }
 
+        // create copy of the constants GO_ON and EOS for this subinterpreter
         if (PyDict_SetItemString(globals, GO_ON_CONSTANT_NAME, build_py_ff_constant(ff::FF_GO_ON)) == -1) {
             CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
         }
@@ -145,6 +108,18 @@ for [k, v] in glb:
             CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
         }
 
+        // Load pickling/unpickling functions IN THE NEW INTERPRETER
+        pickl = new pickling();
+        CHECK_ERROR_THEN("load pickle and unpickle failure: ", returnValue = -1;)
+
+        // deserialize Python node
+        // overwrite the old node (from the main interpreter) with the new one (in this subinterpreter)
+        node = pickl->unpickle(node_ser);
+        CHECK_ERROR_THEN("unpickle node failure: ", returnValue = -1;)
+
+        svc_func = PyObject_GetAttrString(node, "svc");
+
+        // finally run svc_init if the user's node has it
         if (PyObject_HasAttrString(node, "svc_init")) {
             PyObject* svc_init_func = PyObject_GetAttrString(node, "svc_init");
             if (svc_init_func) {

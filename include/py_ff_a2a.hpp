@@ -105,14 +105,7 @@ PyObject* py_ff_a2a_run_and_wait_end(PyObject *self, PyObject *args)
     assert(self);
 
     py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
-    
-    // Release GIL while waiting for thread.
-    int val = 0;
-    Py_BEGIN_ALLOW_THREADS
-    val = _self->a2a->run_and_wait_end();
-    Py_END_ALLOW_THREADS
-
-    return PyLong_FromLong(val);
+    return run_and_wait_end(_self->a2a, _self->use_subinterpreters);
 }
 
 PyDoc_STRVAR(py_ff_a2a_add_firstset_doc, "Add first set to the a2a");

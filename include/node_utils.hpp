@@ -46,4 +46,56 @@ ff::ff_node* args_to_node(PyObject *args, PyObject *kwds, bool use_subints, bool
     return multi_output ? (ff::ff_node*)new ff_monode_process(py_node):new ff_node_process(py_node);
 }
 
+template<typename T>
+PyObject* run_and_wait_end(T *node, bool use_subinterpreters) {
+    PyObject* globals = NULL;
+    if (use_subinterpreters) {
+        // Load pickling/unpickling functions but in the main interpreter
+        pickling pickling_main;
+        CHECK_ERROR_THEN("load pickle and unpickle failure: ", return NULL;)
+        
+        globals = get_globals();
+        
+        // run code to compute global declarations, imports, etc...
+        PyRun_String(R"PY(
+glb = [[k,v] for k,v in globals().items() if not (k.startswith('__') and k.endswith('__'))]
+
+import inspect
+__ff_environment_string = ""
+for [k, v] in glb:
+    try:
+        if inspect.ismodule(v):
+            if v.__package__:
+                __ff_environment_string += f"from {v.__package__} import {k}"
+            else: # v.__package__ is empty the module and the package are the same
+                __ff_environment_string += f"import {k}"
+        elif inspect.isclass(v) or inspect.isfunction(v):
+            __ff_environment_string += inspect.getsource(v)
+        # else:
+        #    __ff_environment_string += f"{k} = {v}"
+        __ff_environment_string += "\n"
+    except:
+        pass
+        )PY", Py_file_input, globals, NULL);
+        CHECK_ERROR_THEN("PyRun_String failure: ", return NULL;)
+        // Cleanup of objects created
+        pickling_main.~pickling();
+    }
+
+    // Release GIL while waiting for thread.
+    int val = 0;
+    Py_BEGIN_ALLOW_THREADS
+    val = node->run_and_wait_end();
+    Py_END_ALLOW_THREADS
+
+    if (use_subinterpreters) {
+        // cleanup of the environment string to free memory
+        PyRun_String(R"PY(
+__ff_environment_string = ""
+        )PY", Py_file_input, globals, NULL);
+    }
+
+    return PyLong_FromLong(val);
+}
+
 #endif // NODE_UTILS

@@ -90,7 +90,7 @@ public:
         int res = read(read_fd, &message.type, sizeof(message.type));
         if (res <= 0) return res;
 
-        int data_vector_size; 
+        size_t data_vector_size; 
         res = read(read_fd, &data_vector_size, sizeof(data_vector_size));
         if (res <= 0) return res;
         message.data.resize(data_vector_size);
@@ -162,7 +162,7 @@ private:
         if (write(send_fd, &type, sizeof(type)) == -1) return -1;
 
         // send vector data size
-        int data_vector_size = serialized_args.size();
+        size_t data_vector_size = serialized_args.size();
         if (write(send_fd, &data_vector_size, sizeof(data_vector_size)) == -1) return -1;
 
         // send vector of data
