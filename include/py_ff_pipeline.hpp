@@ -196,6 +196,33 @@ PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *args, PyObject *kwd
     return PyLong_FromLong(val);
 }
 
+PyDoc_STRVAR(py_ff_pipeline_blocking_mode_doc, "Set pipeline's blocking mode");
+
+PyObject* py_ff_pipeline_blocking_mode(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
+
+    PyObject* bool_arg = PyBool_Check(arg) == 1 ? arg:Py_False;
+    bool enable = PyObject_IsTrue(bool_arg) == 1;
+    _self->pipeline->blocking_mode(enable);
+
+    return Py_None;
+}
+
+PyDoc_STRVAR(py_ff_pipeline_no_mapping_doc, "Disable fastflow's mapping for this pipeline");
+
+PyObject* py_ff_pipeline_no_mapping(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
+    _self->pipeline->no_mapping();
+
+    return Py_None;
+}
+
 static PyMethodDef py_ff_pipeline_methods[] = {
     { "ffTime",           (PyCFunction) py_ff_pipeline_ffTime, 
         METH_NOARGS, py_ff_pipeline_ffTime_doc },
@@ -203,6 +230,10 @@ static PyMethodDef py_ff_pipeline_methods[] = {
         METH_NOARGS, py_ff_pipeline_run_and_wait_end_doc },
     { "add_stage",        (PyCFunction) py_ff_pipeline_add_stage, 
         METH_VARARGS | METH_KEYWORDS, py_ff_pipeline_add_stage_doc },
+    { "blocking_mode", (PyCFunction) py_ff_pipeline_blocking_mode, 
+        METH_O, py_ff_pipeline_blocking_mode_doc },
+    { "no_mapping", (PyCFunction) py_ff_pipeline_no_mapping, 
+        METH_NOARGS, py_ff_pipeline_no_mapping_doc },
     {NULL, NULL} /* Sentinel */
 };
 
@@ -210,24 +241,6 @@ static struct PyMemberDef py_ff_pipeline_members[] = {
     {"use_subinterpreters", T_BOOL, offsetof(py_ff_pipeline_object, use_subinterpreters)},
     {NULL} /* Sentinel */
 };
-
-/*
-static PyType_Slot py_ff_pipeline_slots[] = {
-    {Py_tp_new, (void*)py_ff_pipeline_new},
-    {Py_tp_init, (void*)py_ff_pipeline_init},
-    {Py_tp_dealloc, (void*)py_ff_pipeline_dealloc},
-    {Py_tp_members, py_ff_pipeline_members},
-    {Py_tp_methods, py_ff_pipeline_methods},
-    {0, 0}
-};
-
-static PyType_Spec spec_py_ff_pipeline = {
-    "FFPipeline",                                  // name
-    sizeof(py_ff_pipeline_object) + sizeof(ff::ff_pipeline),    // basicsize
-    0,                                          // itemsize
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   // flags
-    py_ff_pipeline_slots                               // slots
-};*/
 
 static PyTypeObject py_ff_pipeline_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
