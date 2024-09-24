@@ -43,8 +43,15 @@ int py_ff_a2a_init(PyObject *self, PyObject *args, PyObject *kwds)
     } else if (bool_arg != nullptr && !PyBool_Check(bool_arg)) {
         PyErr_Format(PyExc_TypeError, "A bool is required (got type %s)",
                      Py_TYPE(bool_arg)->tp_name);
+        return -1;
     } else {
         m->use_subinterpreters = PyObject_IsTrue(bool_arg) == 1;
+#if PY_MINOR_VERSION < 12
+        if (m->use_subinterpreters) {
+            PyErr_SetString(PyExc_TypeError, "Subinterpreters are supported from Python 3.12, but you are using and older version");
+            return -1;
+        }
+#endif
     }
 
     m->a2a = (ff::ff_a2a*) PyObject_Malloc(sizeof(ff::ff_a2a));

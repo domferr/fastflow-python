@@ -46,6 +46,12 @@ int py_ff_pipeline_init(PyObject *self, PyObject *args, PyObject *kwds)
                      Py_TYPE(bool_arg)->tp_name);
     } else {
         m->use_subinterpreters = PyObject_IsTrue(bool_arg) == 1;
+#if PY_MINOR_VERSION < 12
+        if (m->use_subinterpreters) {
+            PyErr_SetString(PyExc_TypeError, "Subinterpreters are supported from Python 3.12, but you are using and older version");
+            return -1;
+        }
+#endif
     }
 
     m->pipeline = (ff::ff_pipeline*) PyObject_Malloc(sizeof(ff::ff_pipeline));
