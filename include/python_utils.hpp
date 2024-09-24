@@ -14,7 +14,10 @@ inline PyObject* get_globals() {
 #endif
     if (p) return p;
 
-    auto main_module = PyImport_ImportModule("__main__");
+    PyObject* main_mod_name = PyUnicode_FromString("__main__");
+    auto main_module = PyImport_GetModule(main_mod_name);
+    if (main_module == NULL) main_module = PyImport_Import(main_mod_name);
+    Py_DECREF(main_mod_name);
     if (!main_module) return NULL;
     auto res = PyObject_GetAttrString(main_module, "__dict__");
     //Py_XINCREF(res);

@@ -1,7 +1,7 @@
 #ifndef LOG_HPP
 #define LOG_HPP
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #    define LOG(msg) std::cerr << msg << std::endl

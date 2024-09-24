@@ -33,8 +33,8 @@ class sink():
 
 def run_test(use_subinterpreters = True):
     a2a = FFAllToAll(use_subinterpreters)
-    first_stage_size = 1
-    second_stage_size = 2
+    first_stage_size = 4
+    second_stage_size = 3
     # build first stages
     first_lis = [source(i+1) for i in range(first_stage_size)]
     # build second stages

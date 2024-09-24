@@ -3,12 +3,14 @@
 
 #include <Python.h>
 #include <iostream>
+#include "debugging.hpp"
 
 class pickling {
 public:
     pickling() {
         PyObject* pkl_mod_name = PyUnicode_FromString("pickle");
-        PyObject* pkl_mod = PyImport_Import(pkl_mod_name);
+        PyObject* pkl_mod = PyImport_GetModule(pkl_mod_name);
+        if (pkl_mod == NULL) pkl_mod = PyImport_Import(pkl_mod_name);
         pkl_dump_func = PyObject_GetAttrString(pkl_mod, "dumps");
         pkl_load_func = PyObject_GetAttrString(pkl_mod, "loads");
         Py_DECREF(pkl_mod_name); 

@@ -24,20 +24,15 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
     Messaging messaging{ send_fd, read_fd };
     Message message;
 
-    // Load pickling/unpickling functions
-    pickling pickl;
-
     auto cleanup_exit = [&](){
-        LOG("[child] cleanup");
-        // Cleanup of objects created
+        LOG("[child] cleanup and exit");
         close(send_fd);
         close(read_fd);
-        pickl.~pickling();
-        // finalize python interpreter
-        Py_Finalize();
         exit(0);
     };
 
+    // Load pickling/unpickling functions
+    pickling pickl;
     CHECK_ERROR_THEN("[child] load pickle/unpickle failure: ", cleanup_exit();)
 
     PyObject* node = pickl.unpickle(node_ser);
@@ -136,10 +131,10 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
                     // send serialized response
                     err = messaging.send_response(pickl.pickle(py_result));
                     CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
+                    Py_DECREF(py_result);
                 }
                 if (err <= 0) handleError("[child] send response", cleanup_exit());
 
-                Py_DECREF(py_result);
                 Py_DECREF(py_func);
             }
         }
@@ -158,6 +153,7 @@ public:
         Py_INCREF(node);
         has_svc_init = PyObject_HasAttrString(node, "svc_init") == 1;
         has_svc_end = PyObject_HasAttrString(node, "svc_end") == 1;
+        pickling pickl;
     }
     
     int svc_init() {
@@ -170,15 +166,11 @@ public:
         int childToMainFD[2]; // data to be sent from child process to main process
         // create pipes
         if (pipe(mainToChildFD) == -1) {
-            std::string msg = "Failed to create pipe. ";
-            msg.append(strerror(errno));
-            PyErr_SetString(PyExc_Exception, msg.c_str());
+            PyErr_Format(PyExc_Exception, "Failed to create pipe. %s", strerror(errno));
             return -1;
         }
         if (pipe(childToMainFD) == -1) {
-            std::string msg = "Failed to create pipe. ";
-            msg.append(strerror(errno));
-            PyErr_SetString(PyExc_Exception, msg.c_str());
+            PyErr_Format(PyExc_Exception, "Failed to create pipe. %s", strerror(errno));
             return -1;
         }
 
@@ -190,14 +182,13 @@ public:
         CHECK_ERROR_THEN("load pickle/unpickle failure: ", return -1;)
         auto node_ser = pickl.pickle(node);
 
+        TIMESTART(svc_init_fork);
         // from cpython source code
         // https://github.com/python/cpython/blob/9d0a75269c6ae361b1ed5910c3b3424ed93b6f6d/Modules/posixmodule.c#L8044
         PyOS_BeforeFork();
         pid = fork();
         if (pid == -1) {
-            std::string msg = "Failed to fork. ";
-            msg.append(strerror(errno));
-            PyErr_SetString(PyExc_Exception, msg.c_str());
+            PyErr_Format(PyExc_Exception, "Failed to fork. %s", strerror(errno));
             returnValue = -1;
         } else if (pid == 0) { // child
             PyOS_AfterFork_Child();
@@ -207,9 +198,7 @@ public:
 
             pickl.~pickling();
             process_body(node_ser, mainToChildFD[0], childToMainFD[1], registered_callback != NULL, has_svc_init);
-            std::string msg = "[child] shouldn't be here... ";
-            msg.append(strerror(errno));
-            PyErr_SetString(PyExc_Exception, msg.c_str());
+            PyErr_Format(PyExc_Exception, "[child] shouldn't be here... %s", strerror(errno));
             returnValue = -1;
         }
 
@@ -228,8 +217,14 @@ public:
             // if the node has svc_init, the child process will call it
             // wait for svc_init result
             Message response;
-            messaging.recv_message(response);
-            returnValue = deserialize<int>(response.data[0]);
+            int err = 1;
+            auto des_tuple = messaging.recv_deserialized_message<int>(response, &err);
+            if (err <= 0) {
+                returnValue = -1;
+                PyErr_Format(PyExc_Exception, "Failed to receive svc_init result. %s", strerror(errno));
+            } else {
+                returnValue = std::get<0>(des_tuple);
+            }
         }
 
         LOGELAPSED("svc_init time ", svc_init_start_time);
@@ -259,6 +254,7 @@ public:
 
             // parse received ff_send_out_to request
             std::tuple<int, std::string> args = messaging.parse_data<int, std::string>(response.data);
+            // try to deserialize to constant. If it results into NULL, then it is NOT a FastFlow's constant
             void* constant = deserialize<void*>(std::get<1>(args));
             // finally perform ff_send_out_to
             bool result = registered_callback->ff_send_out_to(constant == NULL ? (void*) new std::string(std::get<1>(args)):constant, std::get<0>(args));

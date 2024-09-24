@@ -85,6 +85,13 @@ public:
         return send_message(MESSAGE_TYPE_END_OF_LIFE, "");
     }
 
+    template<typename... Args>
+    std::tuple<Args...> recv_deserialized_message(Message& message, int *err) {
+        *err = recv_message(message);
+        if (*err <= 0) return {};
+        return parse_data<Args...>(message.data);
+    }
+
     int recv_message(Message& message) {
         // recv type
         int res = read(read_fd, &message.type, sizeof(message.type));

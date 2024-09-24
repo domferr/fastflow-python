@@ -45,6 +45,7 @@ int py_ff_farm_init(PyObject *self, PyObject *args, PyObject *kwds)
                      Py_TYPE(bool_arg)->tp_name);
     } else {
         m->use_subinterpreters = PyObject_IsTrue(bool_arg) == 1;
+        // TODO: if we have problems with the following, then we could to PySys_GetObject("version_info");
 #if PY_MINOR_VERSION < 12
         if (m->use_subinterpreters) {
             PyErr_SetString(PyExc_TypeError, "Subinterpreters are supported from Python 3.12, but you are using and older version");
