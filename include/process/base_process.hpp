@@ -62,7 +62,8 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
                 return (PyObject*) NULL;
             }
         } else {
-            int err = messaging.call_remote(response, "ff_send_out_to", index, pickl.pickle(pydata));
+            auto data = pickl.pickle(pydata);
+            int err = messaging.call_remote(response, "ff_send_out_to", index, data);
             if (PyErr_Occurred()) return (PyObject*) NULL;
             if (err <= 0)  {
                 PyErr_SetString(PyExc_Exception, "Error occurred sending ff_send_out_to request");
@@ -129,7 +130,8 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
                     err = messaging.send_response(ff::FF_GO_ON);
                 } else {
                     // send serialized response
-                    err = messaging.send_response(pickl.pickle(py_result));
+                    auto resp = pickl.pickle(py_result);
+                    err = messaging.send_response(resp);
                     CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
                     Py_DECREF(py_result);
                 }

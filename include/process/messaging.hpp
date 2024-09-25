@@ -59,18 +59,18 @@ public:
     }
 
     template<typename... Args>
-    inline int send_response(Args... args) {
+    inline int send_response(Args&... args) {
         return send_message(MESSAGE_TYPE_RESPONSE, "", args...);
     }
 
     template<typename... Args>
-    int call_remote(Message &response, const char* fname, Args... args) {
+    int call_remote(Message &response, const char* fname, Args&... args) {
         start_call_remote(fname, args...);
         return recv_message(response);
     }
 
     template<typename... Args>
-    inline int start_call_remote(const char* fname, Args... args) {
+    inline int start_call_remote(const char* fname, Args&... args) {
         return send_message(MESSAGE_TYPE_REMOTE_PROCEDURE_CALL, fname, args...);
     }
 
@@ -162,7 +162,7 @@ private:
     }
 
     template<typename... Args>
-    int send_message(message_type type, std::string f_name, Args... args) {
+    int send_message(message_type type, std::string f_name, Args&... args) {
         std::vector<std::string> serialized_args = { serialize(args)... };
         
         // send type
