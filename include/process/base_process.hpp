@@ -129,7 +129,8 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
                     err = messaging.send_response(ff::FF_GO_ON);
                 } else {
                     // send serialized response
-                    err = messaging.send_response(pickl.pickle(py_result));
+                    auto pickled = pickl.pickle(py_result);
+                    err = messaging.send_response(pickled);
                     CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
                     Py_DECREF(py_result);
                 }

@@ -26,7 +26,8 @@ template<typename T>
 std::string serialize(const T& arg) {
     std::ostringstream oss;
     oss << arg;
-    return oss.str();
+    auto res = oss.str();
+    return res;
 }
 
 template <>
@@ -93,9 +94,11 @@ public:
     }
 
     int recv_message(Message& message) {
+        TIMESTART(start);
         // recv type
         int res = read(read_fd, &message.type, sizeof(message.type));
         if (res <= 0) return res;
+        LOGELAPSED("waitdata ", start);
 
         size_t data_vector_size; 
         res = read(read_fd, &data_vector_size, sizeof(data_vector_size));
@@ -136,7 +139,8 @@ public:
         delete[] bufferFname;
 
         int ack = 17; 
-        return write(send_fd, &ack, sizeof(ack)); // 0 = EOF, -1 = ERROR, >= 1 = SUCCESS
+        int err = write(send_fd, &ack, sizeof(ack)); // 0 = EOF, -1 = ERROR, >= 1 = SUCCESS
+        return err;
     }
 
     inline bool is_closed() {
@@ -163,8 +167,10 @@ private:
 
     template<typename... Args>
     int send_message(message_type type, std::string f_name, Args... args) {
+        TIMESTART(timestart);
         std::vector<std::string> serialized_args = { serialize(args)... };
-        
+        LOGELAPSED("send_message ", timestart);
+
         // send type
         if (write(send_fd, &type, sizeof(type)) == -1) return -1;
 
@@ -185,9 +191,10 @@ private:
         uint32_t fnameSize = f_name.length();
         if (write(send_fd, &fnameSize, sizeof(fnameSize)) == -1) return -1;
         if (fnameSize > 0 && writen(send_fd, f_name.c_str(), fnameSize) == -1) return -1;
-
+        
         int ack; 
-        return read(read_fd, &ack, sizeof(ack)); // 0 = EOF, -1 = ERROR, >= 1 = SUCCESS
+        int err = read(read_fd, &ack, sizeof(ack)); // 0 = EOF, -1 = ERROR, >= 1 = SUCCESS
+        return err;
     }
 };
 

@@ -99,6 +99,5 @@ if __name__ == "__main__":
 """
 Some examples to run this benchmark
 - python3.12 benchmark/farm/bench.py -tasks 128 -workers 4 -ms 100 -bytes 512000 -sub
-- python3.12 benchmark/farm/bench.py -tasks 128 -workers 4 -ms 100 -bytes 320024 -sub 2>1 | grep subinterp
 - for i in 1 2 4 8 10 12 16 20 26 30 36 42 48 54 60 64; do for size in 1024 4096 8192 16384 32768 65536 524288 1048576; do python3.12 benchmark/farm/bench.py -tasks 512 -workers $i -ms 500 -bytes $size -sub 2>1 | grep subinterp; done; done
 """

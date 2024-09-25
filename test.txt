@@ -1,0 +1,224 @@
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((1, 557.465)) # bytes = 100 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((1, 559.155)) # bytes = 512 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((1, 560.611)) # bytes = 1024 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((1, 579.428)) # bytes = 8192 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((1, 624.13)) # bytes = 32768 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((1, 3122.583)) # bytes = 524288 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((1, 5964.952)) # bytes = 1048576 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((2, 281.927)) # bytes = 100 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((2, 283.082)) # bytes = 512 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((2, 284.42)) # bytes = 1024 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((2, 294.137)) # bytes = 8192 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((2, 319.015)) # bytes = 32768 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((2, 2652.254)) # bytes = 524288 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((2, 5467.131)) # bytes = 1048576 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((4, 147.132)) # bytes = 100 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((4, 147.389)) # bytes = 512 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((4, 148.518)) # bytes = 1024 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((4, 154.506)) # bytes = 8192 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((4, 170.507)) # bytes = 32768 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((4, 2646.753)) # bytes = 524288 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((4, 5483.89)) # bytes = 1048576 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((8, 88.042)) # bytes = 100 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((8, 85.377)) # bytes = 512 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((8, 89.401)) # bytes = 1024 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((8, 93.22)) # bytes = 8192 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((8, 141.668)) # bytes = 32768 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((8, 2696.274)) # bytes = 524288 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((8, 5617.1720000000005)) # bytes = 1048576 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((10, 77.033)) # bytes = 100 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((10, 78.139)) # bytes = 512 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((10, 74.229)) # bytes = 1024 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((10, 92.119)) # bytes = 8192 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((10, 148.067)) # bytes = 32768 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((10, 2681.286)) # bytes = 524288 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((10, 5606.198)) # bytes = 1048576 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((12, 72.88)) # bytes = 100 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((12, 71.262)) # bytes = 512 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((12, 73.939)) # bytes = 1024 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((12, 97.215)) # bytes = 8192 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((12, 150.282)) # bytes = 32768 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((12, 2629.64)) # bytes = 524288 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((12, 5517.994)) # bytes = 1048576 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((16, 76.014)) # bytes = 100 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((16, 71.113)) # bytes = 512 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((16, 79.811)) # bytes = 1024 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((16, 103.244)) # bytes = 8192 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((16, 144.808)) # bytes = 32768 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((16, 2572.194)) # bytes = 524288 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((16, 5324.279)) # bytes = 1048576 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((20, 86.688)) # bytes = 100 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((20, 85.725)) # bytes = 512 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((20, 86.132)) # bytes = 1024 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((20, 109.379)) # bytes = 8192 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((20, 195.776)) # bytes = 32768 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((20, 2527.131)) # bytes = 524288 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((20, 5465.217)) # bytes = 1048576 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((26, 98.69)) # bytes = 100 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((26, 93.008)) # bytes = 512 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((26, 98.26)) # bytes = 1024 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((26, 129.179)) # bytes = 8192 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((26, 223.599)) # bytes = 32768 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((26, 2663.746)) # bytes = 524288 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((26, 5226.095)) # bytes = 1048576 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((30, 104.366)) # bytes = 100 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((30, 123.179)) # bytes = 512 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((30, 122.809)) # bytes = 1024 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((30, 157.779)) # bytes = 8192 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((30, 241.017)) # bytes = 32768 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((30, 3135.744)) # bytes = 524288 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((30, 5480.439)) # bytes = 1048576 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((36, 139.322)) # bytes = 100 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((36, 143.876)) # bytes = 512 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((36, 148.904)) # bytes = 1024 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((36, 196.87)) # bytes = 8192 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((36, 273.036)) # bytes = 32768 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((36, 2696.621)) # bytes = 524288 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((36, 5503.361)) # bytes = 1048576 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((42, 161.561)) # bytes = 100 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((42, 176.595)) # bytes = 512 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((42, 179.641)) # bytes = 1024 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((42, 233.507)) # bytes = 8192 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((42, 321.416)) # bytes = 32768 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((42, 2797.184)) # bytes = 524288 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((42, 5240.676)) # bytes = 1048576 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((48, 186.723)) # bytes = 100 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((48, 191.633)) # bytes = 512 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((48, 208.8)) # bytes = 1024 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((48, 255.071)) # bytes = 8192 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((48, 346.72)) # bytes = 32768 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((48, 2803.492)) # bytes = 524288 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((48, 5452.507)) # bytes = 1048576 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((54, 218.775)) # bytes = 100 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((54, 219.505)) # bytes = 512 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((54, 240.318)) # bytes = 1024 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((54, 290.939)) # bytes = 8192 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((54, 400.396)) # bytes = 32768 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((54, 2914.79)) # bytes = 524288 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((54, 5606.43)) # bytes = 1048576 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((60, 240.539)) # bytes = 100 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((60, 251.471)) # bytes = 512 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((60, 281.196)) # bytes = 1024 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((60, 341.577)) # bytes = 8192 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((60, 485.017)) # bytes = 32768 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((60, 2951.9120000000003)) # bytes = 524288 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((60, 5681.193)) # bytes = 1048576 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using processes-based strategy
+res[100] = res.get(100, []); res.get(100).append((64, 269.62)) # bytes = 100 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using processes-based strategy
+res[512] = res.get(512, []); res.get(512).append((64, 284.458)) # bytes = 512 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using processes-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((64, 313.774)) # bytes = 1024 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using processes-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((64, 387.964)) # bytes = 8192 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using processes-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((64, 511.928)) # bytes = 32768 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using processes-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((64, 3891.698)) # bytes = 524288 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using processes-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((64, 7453.859)) # bytes = 1048576 ms = 1
