@@ -1,0 +1,224 @@
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((1, 552.442)) # bytes = 100 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((1, 552.764)) # bytes = 512 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((1, 553.835)) # bytes = 1024 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((1, 562.491)) # bytes = 8192 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((1, 585.887)) # bytes = 32768 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((1, 1012.099)) # bytes = 524288 ms = 1
+Running a farm of 1 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((1, 1560.1779999999999)) # bytes = 1048576 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((2, 295.709)) # bytes = 100 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((2, 295.481)) # bytes = 512 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((2, 295.976)) # bytes = 1024 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((2, 300.796)) # bytes = 8192 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((2, 315.073)) # bytes = 32768 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((2, 568.623)) # bytes = 524288 ms = 1
+Running a farm of 2 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((2, 1010.13)) # bytes = 1048576 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((4, 169.405)) # bytes = 100 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((4, 180.041)) # bytes = 512 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((4, 180.378)) # bytes = 1024 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((4, 183.462)) # bytes = 8192 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((4, 192.064)) # bytes = 32768 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((4, 560.356)) # bytes = 524288 ms = 1
+Running a farm of 4 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((4, 1015.95)) # bytes = 1048576 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((8, 120.23)) # bytes = 100 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((8, 122.549)) # bytes = 512 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((8, 121.768)) # bytes = 1024 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((8, 122.455)) # bytes = 8192 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((8, 130.25)) # bytes = 32768 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((8, 574.789)) # bytes = 524288 ms = 1
+Running a farm of 8 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((8, 1028.251)) # bytes = 1048576 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((10, 109.048)) # bytes = 100 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((10, 110.546)) # bytes = 512 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((10, 110.648)) # bytes = 1024 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((10, 113.693)) # bytes = 8192 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((10, 120.917)) # bytes = 32768 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((10, 605.907)) # bytes = 524288 ms = 1
+Running a farm of 10 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((10, 1001.337)) # bytes = 1048576 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((12, 106.828)) # bytes = 100 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((12, 112.449)) # bytes = 512 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((12, 105.709)) # bytes = 1024 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((12, 105.265)) # bytes = 8192 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((12, 117.685)) # bytes = 32768 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((12, 582.319)) # bytes = 524288 ms = 1
+Running a farm of 12 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((12, 1044.851)) # bytes = 1048576 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((16, 107.493)) # bytes = 100 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((16, 107.945)) # bytes = 512 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((16, 109.609)) # bytes = 1024 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((16, 108.66)) # bytes = 8192 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((16, 137.405)) # bytes = 32768 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((16, 609.796)) # bytes = 524288 ms = 1
+Running a farm of 16 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((16, 1103.749)) # bytes = 1048576 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((20, 123.726)) # bytes = 100 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((20, 123.469)) # bytes = 512 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((20, 120.323)) # bytes = 1024 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((20, 124.912)) # bytes = 8192 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((20, 149.358)) # bytes = 32768 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((20, 640.514)) # bytes = 524288 ms = 1
+Running a farm of 20 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((20, 1107.13)) # bytes = 1048576 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((26, 140.465)) # bytes = 100 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((26, 144.76)) # bytes = 512 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((26, 145.451)) # bytes = 1024 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((26, 143.786)) # bytes = 8192 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((26, 177.183)) # bytes = 32768 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((26, 662.811)) # bytes = 524288 ms = 1
+Running a farm of 26 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((26, 1152.8600000000001)) # bytes = 1048576 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((30, 157.048)) # bytes = 100 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((30, 158.216)) # bytes = 512 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((30, 163.199)) # bytes = 1024 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((30, 170.219)) # bytes = 8192 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((30, 198.489)) # bytes = 32768 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((30, 696.902)) # bytes = 524288 ms = 1
+Running a farm of 30 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((30, 1154.171)) # bytes = 1048576 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((36, 178.793)) # bytes = 100 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((36, 181.178)) # bytes = 512 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((36, 186.641)) # bytes = 1024 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((36, 205.048)) # bytes = 8192 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((36, 233.15)) # bytes = 32768 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((36, 702.981)) # bytes = 524288 ms = 1
+Running a farm of 36 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((36, 1204.435)) # bytes = 1048576 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((42, 191.656)) # bytes = 100 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((42, 190.356)) # bytes = 512 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((42, 203.657)) # bytes = 1024 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((42, 238.339)) # bytes = 8192 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((42, 262.074)) # bytes = 32768 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((42, 757.197)) # bytes = 524288 ms = 1
+Running a farm of 42 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((42, 1239.087)) # bytes = 1048576 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((48, 199.628)) # bytes = 100 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((48, 199.943)) # bytes = 512 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((48, 211.052)) # bytes = 1024 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((48, 262.873)) # bytes = 8192 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((48, 282.876)) # bytes = 32768 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((48, 787.515)) # bytes = 524288 ms = 1
+Running a farm of 48 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((48, 1244.27)) # bytes = 1048576 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((54, 219.587)) # bytes = 100 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((54, 215.635)) # bytes = 512 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((54, 240.091)) # bytes = 1024 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((54, 290.356)) # bytes = 8192 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((54, 323.423)) # bytes = 32768 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((54, 844.915)) # bytes = 524288 ms = 1
+Running a farm of 54 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((54, 1297.217)) # bytes = 1048576 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((60, 243.977)) # bytes = 100 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((60, 228.314)) # bytes = 512 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((60, 241.446)) # bytes = 1024 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((60, 313.142)) # bytes = 8192 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((60, 353.112)) # bytes = 32768 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((60, 854.872)) # bytes = 524288 ms = 1
+Running a farm of 60 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((60, 1359.943)) # bytes = 1048576 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 100 bytes. Using subinterpreters-based strategy
+res[100] = res.get(100, []); res.get(100).append((64, 246.755)) # bytes = 100 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 512 bytes. Using subinterpreters-based strategy
+res[512] = res.get(512, []); res.get(512).append((64, 252.452)) # bytes = 512 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 1024 bytes. Using subinterpreters-based strategy
+res[1024] = res.get(1024, []); res.get(1024).append((64, 251.269)) # bytes = 1024 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 8192 bytes. Using subinterpreters-based strategy
+res[8192] = res.get(8192, []); res.get(8192).append((64, 334.707)) # bytes = 8192 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 32768 bytes. Using subinterpreters-based strategy
+res[32768] = res.get(32768, []); res.get(32768).append((64, 341.213)) # bytes = 32768 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 524288 bytes. Using subinterpreters-based strategy
+res[524288] = res.get(524288, []); res.get(524288).append((64, 913.334)) # bytes = 524288 ms = 1
+Running a farm of 64 workers and 512 tasks. Each task is 1ms long and has a size of 1048576 bytes. Using subinterpreters-based strategy
+res[1048576] = res.get(1048576, []); res.get(1048576).append((64, 1368.964)) # bytes = 1048576 ms = 1

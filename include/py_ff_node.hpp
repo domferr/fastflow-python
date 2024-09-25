@@ -5,6 +5,7 @@
 #include <ff/ff.hpp>
 #include <iostream>
 #include "error_macros.hpp"
+#include "py_ff_constant.hpp"
 
 class py_ff_node: public ff::ff_node {
 public:
@@ -58,23 +59,18 @@ public:
         // Release the main GIL
         PyEval_SaveThread();
 
-        if (py_result == Py_None) {
-            return NULL;
+        // if we have a FastFlow's constant, return it
+        if (PyObject_TypeCheck(py_result, &py_ff_constant_type) != 0) {
+            py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_result);
+            return _const_result->ff_const;
         }
-        return (void*) py_result;
-    }
 
-    void cleanup() {
-        // Cleanup of objects created
-        Py_DECREF(svc_func);
-        Py_DECREF(node);
-        svc_func = nullptr;
-        node = nullptr;
-        PyEval_SaveThread();
-        /*// cleanup thread state with main interpreter
-        PyThreadState_Clear(tstate);
-        PyThreadState_Delete(tstate);*/
-        tstate = nullptr;
+        // map None to GO_ON
+        if (py_result == Py_None) {
+            return ff::FF_GO_ON;
+        }
+
+        return (void*) py_result;
     }
 
     void svc_end() override {
@@ -91,7 +87,16 @@ public:
             }
         }
 
-        cleanup();
+        // Cleanup of objects created
+        Py_DECREF(svc_func);
+        Py_DECREF(node);
+        svc_func = nullptr;
+        node = nullptr;
+        PyEval_SaveThread();
+        /*// cleanup thread state with main interpreter
+        PyThreadState_Clear(tstate);
+        PyThreadState_Delete(tstate);*/
+        tstate = nullptr;
     }
 
 private:
