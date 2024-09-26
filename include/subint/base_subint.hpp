@@ -24,8 +24,11 @@ public:
     int svc_init() {
         TIMESTART(svc_init_start_time);
 
+        // associate a new thread state with fastflow node's thread
+        PyThreadState* main_tstate = PyThreadState_New(tstate->interp);
+        
         // Hold the main GIL
-        PyEval_RestoreThread(tstate);
+        PyEval_RestoreThread(main_tstate);
 
         // Load pickling/unpickling functions but in the main interpreter
         pickling pickling_main;
@@ -43,9 +46,6 @@ public:
         // Cleanup of objects created
         pickling_main.~pickling();
 
-        // associate a new thread state with fastflow node's thread
-        tstate = PyThreadState_New(tstate->interp);
-
         TIMESTART(svc_init_create_interpr);
 
         // Create a new sub-interpreter with its own GIL
@@ -59,21 +59,22 @@ public:
             .gil = PyInterpreterConfig_OWN_GIL,
         };
         // save thread state with main interpreter
-        PyThreadState* cached_tstate = tstate;
+        PyThreadState* interp_tstate;
         // create subinterpreter (and drop the main GIL and acquire the new GIL)
-        PyStatus status = Py_NewInterpreterFromConfig(&tstate, &sub_interp_config);
+        PyStatus status = Py_NewInterpreterFromConfig(&interp_tstate, &sub_interp_config);
         /* The new interpreter is now active in the current thread */
         if (PyStatus_Exception(status)) {
             PRINT_ERROR("Py_NewInterpreterFromConfig failure")
             // cleanup thread state with main interpreter
-            PyThreadState_Clear(cached_tstate);
-            PyThreadState_Delete(cached_tstate);
+            PyThreadState_Clear(main_tstate);
+            PyThreadState_Delete(main_tstate);
             return -1;
         }
 
+        tstate = interp_tstate;
         // cleanup thread state with main interpreter
-        PyThreadState_Clear(cached_tstate);
-        PyThreadState_Delete(cached_tstate);
+        PyThreadState_Clear(main_tstate);
+        PyThreadState_Delete(main_tstate);
 
         LOGELAPSED("svc_init_create_interpr time ", svc_init_create_interpr);
 
