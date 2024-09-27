@@ -171,7 +171,7 @@ public:
         //Py_INCREF(pickled_result_bytes);
         
         LOGELAPSED("svc time ", svc_start_time);
-        
+
         return (void*) pickled_result_bytes;
     }
 
