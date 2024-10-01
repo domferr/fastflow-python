@@ -1,4 +1,4 @@
-from fastflow import FFAllToAll, FFPipeline, EOS, ff_send_out_to
+from fastflow import FFAllToAll, FFPipeline, EOS, ff_send_out
 import sys
 
 """
@@ -19,7 +19,7 @@ class source():
         if self.counter > 5:
             return EOS
         self.counter += 1
-        ff_send_out_to(list(["source-to-first1"]), 0)
+        ff_send_out(list(["source-to-first1"]), 0)
         return list(["source-to-any"])
 
 class first():

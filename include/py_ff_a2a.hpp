@@ -124,8 +124,30 @@ PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *args, PyObject* kwds)
     py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
 
     PyObject *py_nodes = NULL;
-    bool use_main_thread = false;
-    if (parse_args(args, kwds, &py_nodes, &use_main_thread) == -1) return NULL;
+
+    PyObject *py_use_main_thread = Py_False;
+    PyObject *py_ondemand = Py_False;
+    static const char *kwlist[] = { "", "ondemand", "use_main_thread", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|$OO", const_cast<char**>(kwlist), &py_nodes, &py_ondemand, &py_use_main_thread)) {
+        assert(PyErr_Occurred());
+        PyErr_SetString(PyExc_RuntimeError, "Tuple and keywords parsing failed");
+        return NULL;
+    }
+
+    if (py_use_main_thread != nullptr && !PyBool_Check(py_use_main_thread)) {
+        PyErr_Format(PyExc_TypeError, "A bool is required for 'use_main_thread' keyword (got type %s)",
+                     Py_TYPE(py_use_main_thread)->tp_name);
+        return NULL;
+    }
+
+    if (py_ondemand != nullptr && !PyBool_Check(py_ondemand)) {
+        PyErr_Format(PyExc_TypeError, "A bool is required for 'ondemand' keyword (got type %s)",
+                     Py_TYPE(py_ondemand)->tp_name);
+        return NULL;
+    }
+
+    bool use_main_thread = PyObject_IsTrue(py_use_main_thread) == 1;
+    bool ondemand = PyObject_IsTrue(py_ondemand) == 1;
 
     std::vector<ff::ff_node*> set;
     // Iterate over all the arguments
@@ -163,8 +185,7 @@ PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *args, PyObject* kwds)
     }
     Py_DECREF(iterator);
 
-    int ondemand = 0;
-    int val = _self->a2a->add_firstset(set, ondemand, false);
+    int val = _self->a2a->add_firstset(set, ondemand ? 1:0, false);
     return PyLong_FromLong(val);
 }
 

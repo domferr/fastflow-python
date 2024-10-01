@@ -1,14 +1,15 @@
 from fastflow import FFAllToAll, EOS, GO_ON, ff_send_out
 import sys
+import time
 
 """
-    source ______ sink
-              |
-    source ___|   sink
-              |
-    source ___|   sink
-              |
-    source ___|
+    source _   _ slowestsink
+            | |
+    source _|_|_ sink
+            | |
+    source _|_|_ sink
+            |
+    source _|
 """
 
 class source():
@@ -17,18 +18,21 @@ class source():
         self.id = id
 
     def svc(self, *arg):
-        if self.counter > 5:
-            return EOS
-        self.counter += 1
-
-        ff_send_out(list([f"source{self.id}-to-sink1"]), 0)
+        while self.counter < 8:
+            ff_send_out(list([f"source{self.id}-to-any"]))
+            self.counter += 1
+        return EOS
 
 class sink():
     def __init__(self, id):
         self.id = id
 
     def svc(self, lis: list):
-        lis.append(f"sink{self.id}")
+        if self.id == 1:
+            time.sleep(0.1)
+            lis.append(f"slowestsink{self.id}")
+        else:
+            lis.append(f"sink{self.id}")
         print(lis)
 
 def run_test(use_subinterpreters = True):
@@ -40,7 +44,7 @@ def run_test(use_subinterpreters = True):
     # build second stages
     second_lis = [sink(i+1) for i in range(second_stage_size)]
     # add first stages
-    a2a.add_firstset(first_lis)
+    a2a.add_firstset(first_lis, ondemand=True)
     # add second stages
     a2a.add_secondset(second_lis)
     a2a.run_and_wait_end()

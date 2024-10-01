@@ -84,8 +84,8 @@ public:
         py_ff_callback_object* callback = (py_ff_callback_object*) PyObject_CallObject(
             (PyObject *) &py_ff_callback_type, NULL
         );
-        callback->ff_send_out_to_callback = [this](PyObject* pydata, int index) {
-            return this->py_ff_send_out_to(pydata, index);
+        callback->ff_send_out_callback = [this](PyObject* pydata, int index) {
+            return this->py_ff_send_out(pydata, index);
         };
         
         int returnValue = 0;
@@ -96,7 +96,7 @@ public:
             CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
         }
         // if you access the methods by importing them from the module, replace each method with the callback's one
-        if (PyDict_SetItemString(globals, "ff_send_out_to", PyObject_GetAttrString((PyObject*) callback, "ff_send_out_to")) == -1) {
+        if (PyDict_SetItemString(globals, "ff_send_out", PyObject_GetAttrString((PyObject*) callback, "ff_send_out")) == -1) {
             CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)
         }
 
@@ -205,27 +205,25 @@ public:
         LOGELAPSED("svc_end time ", svc_end_start_time);
     }
 
-    PyObject* py_ff_send_out_to(PyObject *py_data, int index) {        
-        if (registered_callback == NULL) {
+    PyObject* py_ff_send_out(PyObject *py_data, int index) {        
+        if (registered_callback == NULL && index != -1) {
             PyErr_SetString(PyExc_Exception, "Operation not available. This is not a multi output node");
             return NULL;
-        }
-
-        if (index < 0) {
-            PyErr_SetString(PyExc_Exception, "Index cannot be negative");
-            return (PyObject*) NULL;
         }
 
         // we may have a fastflow constant as data to send out to index
         if (PyObject_TypeCheck(py_data, &py_ff_constant_type) != 0) {
             py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(py_data);
-            return registered_callback->ff_send_out_to(_const_result->ff_const, index) ? Py_True:Py_False;
+            auto res = index >= 0 ? 
+                registered_callback->ff_send_out_to(_const_result->ff_const, index):
+                registered_callback->ff_send_out(_const_result->ff_const);
+            return res ? Py_True:Py_False;
         }
 
         auto pickled_data_bytes = pickl->pickle_bytes(py_data);
         CHECK_ERROR_THEN("pickle send out data failure: ", return NULL;)
 
-        return registered_callback->ff_send_out_to(pickled_data_bytes, index) ? Py_True:Py_False;
+        return registered_callback->ff_send_out(pickled_data_bytes, index) ? Py_True:Py_False;
     }
 
     void register_callback(ff::ff_monode* cb_node) {

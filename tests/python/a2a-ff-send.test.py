@@ -2,13 +2,13 @@ from fastflow import FFAllToAll, EOS, GO_ON, ff_send_out
 import sys
 
 """
-    source ______ sink
-              |
-    source ___|   sink
-              |
-    source ___|   sink
-              |
-    source ___|
+    source _   _ sink
+            | |
+    source _|_|_ sink
+            | |
+    source _|_|_ sink
+            |
+    source _|
 """
 
 class source():
@@ -17,11 +17,10 @@ class source():
         self.id = id
 
     def svc(self, *arg):
-        if self.counter > 5:
-            return EOS
-        self.counter += 1
-
-        ff_send_out(list([f"source{self.id}-to-sink1"]), 0)
+        while self.counter < 5:
+            ff_send_out(list([f"source{self.id}-to-any"]))
+            self.counter += 1
+        return EOS
 
 class sink():
     def __init__(self, id):

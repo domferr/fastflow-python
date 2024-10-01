@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 import time
 from concurrent.futures import ProcessPoolExecutor, wait
-from fastflow import FFFarm, EOS, ff_send_out_to
+from fastflow import FFFarm, EOS, ff_send_out
 
 class source():
     def __init__(self, ntasks, workers):
@@ -14,7 +14,7 @@ class source():
         while self.ntasks > 0:
             self.ntasks -= 1
             N = 3000
-            ff_send_out_to(N, self.ntasks % self.workers)
+            ff_send_out(N, self.ntasks % self.workers)
         return EOS
 
 class worker():

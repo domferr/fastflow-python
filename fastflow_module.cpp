@@ -68,9 +68,9 @@ fastflow_exec(PyObject *module)
     return 0;
 }
 
-PyDoc_STRVAR(ff_send_out_to_doc, "Send out to a node");
+PyDoc_STRVAR(ff_send_out_doc, "Send out to a node");
 
-PyObject* empty_ff_send_out_to(PyObject *self, PyObject *args) {
+PyObject* empty_ff_send_out(PyObject *self, PyObject *args) {
     assert(self);
     
     PyErr_SetString(PyExc_Exception, "Operation not available. This is not a multi output node");
@@ -78,7 +78,7 @@ PyObject* empty_ff_send_out_to(PyObject *self, PyObject *args) {
 }
 
 static PyMethodDef module_methods[] = {
-    { "ff_send_out_to", (PyCFunction) empty_ff_send_out_to, METH_VARARGS, ff_send_out_to_doc },
+    { "ff_send_out", (PyCFunction) empty_ff_send_out, METH_VARARGS, ff_send_out_doc },
     {NULL, NULL} /* Sentinel */
 };
 

@@ -7,31 +7,48 @@
 
 typedef struct {
     PyObject_HEAD
-    std::function<PyObject*(PyObject*, int)> ff_send_out_to_callback;
+    std::function<PyObject*(PyObject*, int)> ff_send_out_callback;
 } py_ff_callback_object;
 
-PyDoc_STRVAR(py_ff_callback_ff_send_out_to_doc, "FF send out to");
+PyDoc_STRVAR(py_ff_callback_ff_send_out_doc, "FF send out to");
 
-PyObject* py_ff_callback_ff_send_out_to(PyObject *self, PyObject *args)
+PyObject* py_ff_callback_ff_send_out(PyObject *self, PyObject *args)
 {
     assert(self);
     py_ff_callback_object* _self = reinterpret_cast<py_ff_callback_object*>(self);
     
     PyObject *pydata = nullptr;
-    unsigned int index = 0;
-    if (!PyArg_ParseTuple(args, "OI", &pydata, &index)) return NULL;
+    PyObject *pyindex = nullptr;
+    // doc: http://web.mit.edu/people/amliu/vrut/python/ext/parseTuple.html
+    if (!PyArg_ParseTuple(args, "O|O", &pydata, &pyindex)) return NULL;
     
     if (pydata == nullptr) {
         PyErr_SetString(PyExc_TypeError, "Please provide valid data object");
         return NULL;
     }
 
-    return _self->ff_send_out_to_callback(pydata, index);
+    int index = -1;
+    if (pyindex != nullptr) {
+        if (PyLong_Check(pyindex) == 0) {
+            PyErr_Format(PyExc_TypeError, "Please provide the index as an integer object (got type %s)",
+                        Py_TYPE(pyindex)->tp_name);
+            return NULL;
+        }
+
+        index = PyLong_AsLong(pyindex);
+
+        if (index < 0) {
+            PyErr_SetString(PyExc_Exception, "Index cannot be negative");
+            return (PyObject*) NULL;
+        }
+    }
+
+    return _self->ff_send_out_callback(pydata, index);
 }
 
 static PyMethodDef py_ff_callback_methods[] = {
-    { "ff_send_out_to", (PyCFunction) py_ff_callback_ff_send_out_to, 
-        METH_VARARGS, py_ff_callback_ff_send_out_to_doc },
+    { "ff_send_out", (PyCFunction) py_ff_callback_ff_send_out, 
+        METH_VARARGS, py_ff_callback_ff_send_out_doc },
     {NULL, NULL} /* Sentinel */
 };
 

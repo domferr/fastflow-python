@@ -41,14 +41,9 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
     py_ff_callback_object* callback = (py_ff_callback_object*) PyObject_CallObject(
         (PyObject *) &py_ff_callback_type, NULL
     );
-    callback->ff_send_out_to_callback = [isMultiOutput, &pickl, &messaging](PyObject* pydata, int index) {
+    callback->ff_send_out_callback = [isMultiOutput, &pickl, &messaging](PyObject* pydata, int index) {
         if (!isMultiOutput) {
             PyErr_SetString(PyExc_Exception, "Operation not available. This is not a multi output node");
-            return (PyObject*) NULL;
-        }
-
-        if (index < 0) {
-            PyErr_SetString(PyExc_Exception, "Index cannot be negative");
             return (PyObject*) NULL;
         }
 
@@ -56,17 +51,17 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
         if (PyObject_TypeCheck(pydata, &py_ff_constant_type) != 0) {
             // we may have a fastflow constant as data to send out to index
             py_ff_constant_object* _const_result = reinterpret_cast<py_ff_constant_object*>(pydata);
-            int err = messaging.call_remote(response, "ff_send_out_to", index, _const_result->ff_const);
+            int err = messaging.call_remote(response, "ff_send_out", _const_result->ff_const, index);
             if (err <= 0)  {
-                PyErr_SetString(PyExc_Exception, "Error occurred sending ff_send_out_to request");
+                PyErr_SetString(PyExc_Exception, "Error occurred sending ff_send_out request");
                 return (PyObject*) NULL;
             }
         } else {
             auto data = pickl.pickle(pydata);
-            int err = messaging.call_remote(response, "ff_send_out_to", index, data);
+            int err = messaging.call_remote(response, "ff_send_out", data, index);
             if (PyErr_Occurred()) return (PyObject*) NULL;
             if (err <= 0)  {
-                PyErr_SetString(PyExc_Exception, "Error occurred sending ff_send_out_to request");
+                PyErr_SetString(PyExc_Exception, "Error occurred sending ff_send_out request");
                 return (PyObject*) NULL;
             }
         }
@@ -81,7 +76,7 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
         CHECK_ERROR_THEN("PyDict_SetItemString failure: ", cleanup_exit();)
     }
     // if you access the methods by importing them from the module, replace each method with the delegate's one
-    if (PyDict_SetItemString(globals, "ff_send_out_to", PyObject_GetAttrString((PyObject*) callback, "ff_send_out_to")) == -1) {
+    if (PyDict_SetItemString(globals, "ff_send_out", PyObject_GetAttrString((PyObject*) callback, "ff_send_out")) == -1) {
         CHECK_ERROR_THEN("PyDict_SetItemString failure: ", cleanup_exit();)
     }
 
@@ -248,23 +243,27 @@ public:
         
         while(response.type == MESSAGE_TYPE_REMOTE_PROCEDURE_CALL) {
             // the only supported remote procedure call from the child process
-            // if the call of ff_send_out_to (as of today...)
-            if (response.f_name.compare("ff_send_out_to") != 0) {
+            // if the call of ff_send_out (as of today...)
+            if (response.f_name.compare("ff_send_out") != 0) {
                 handleError("got invalid f_name", );
                 return NULL;
             }
 
-            // parse received ff_send_out_to request
-            std::tuple<int, std::string> args = messaging.parse_data<int, std::string>(response.data);
+            // parse received ff_send_out request
+            std::tuple<std::string, int> args = messaging.parse_data<std::string, int>(response.data);
             // try to deserialize to constant. If it results into NULL, then it is NOT a FastFlow's constant
-            void* constant = deserialize<void*>(std::get<1>(args));
-            // finally perform ff_send_out_to
-            bool result = registered_callback->ff_send_out_to(constant == NULL ? (void*) new std::string(std::get<1>(args)):constant, std::get<0>(args));
+            void* constant = deserialize<void*>(std::get<0>(args));
+            // finally perform ff_send_out
+            int index = std::get<1>(args);
+            auto data = constant == NULL ? (void*) new std::string(std::get<0>(args)):constant;
+            bool result = index >= 0 ? 
+                registered_callback->ff_send_out_to(data, index):
+                registered_callback->ff_send_out(data);
             
-            // send ff_send_out_to result
+            // send ff_send_out result
             err = messaging.send_response(result);
             if (err <= 0) {
-                handleError("error sending ff_send_out_to response", );
+                handleError("error sending ff_send_out response", );
                 return NULL;
             }
 
