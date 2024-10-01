@@ -201,6 +201,7 @@ public:
 
         // parent
         PyOS_AfterFork_Parent();
+        LOGELAPSED("svc_fork time ", svc_init_fork);
         pickl.~pickling();
 
         // Release the main GIL

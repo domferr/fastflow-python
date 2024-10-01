@@ -1,9 +1,14 @@
 
 import argparse
-import numpy as np
 import time
 from concurrent.futures import ProcessPoolExecutor, wait
 from fastflow import FFFarm, EOS, ff_send_out
+import os
+
+print("disable numpy threads")
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+import numpy as np
 
 class source():
     def __init__(self, ntasks, workers):
@@ -44,11 +49,12 @@ if __name__ == "__main__":
     group.add_argument('-fastflow', action="store_true", help='Use FastFlow', required=False)
     group.add_argument('-processpool', action='store_true', help='Use ProcessPool from concurrent.futures')
     args = parser.parse_args()
-    
-    print(args.workers)
+
+    start = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
     if args.fastflow:
         farm = FFFarm()
         farm.no_mapping()
+        farm.blocking_mode(True)
         farm.add_emitter(source(args.ntasks, args.workers))
         farm.add_workers([worker() for _ in range(args.workers)])
         farm.run_and_wait_end()
@@ -60,3 +66,6 @@ if __name__ == "__main__":
     else:
         for _ in range(args.ntasks):
             task()
+
+    end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+    print((end - start)/1000000000)

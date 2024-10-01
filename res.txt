@@ -1,18 +1,1 @@
-Running a farm of 1 workers and 5120 tasks. Each task is 50ms long and has a size of 100 bytes. Using processes-based strategy
-res[100] = res.get(100, []); res.get(100).append((1, 256227.337)) # bytes = 100 ms = 50
-Running a farm of 2 workers and 5120 tasks. Each task is 50ms long and has a size of 100 bytes. Using processes-based strategy
-res[100] = res.get(100, []); res.get(100).append((2, 128123.051)) # bytes = 100 ms = 50
-Running a farm of 4 workers and 5120 tasks. Each task is 50ms long and has a size of 100 bytes. Using processes-based strategy
-res[100] = res.get(100, []); res.get(100).append((4, 64074.72)) # bytes = 100 ms = 50
-Running a farm of 8 workers and 5120 tasks. Each task is 50ms long and has a size of 100 bytes. Using processes-based strategy
-res[100] = res.get(100, []); res.get(100).append((8, 32052.79)) # bytes = 100 ms = 50
-Running a farm of 12 workers and 5120 tasks. Each task is 50ms long and has a size of 100 bytes. Using processes-based strategy
-res[100] = res.get(100, []); res.get(100).append((12, 21393.738)) # bytes = 100 ms = 50
-Running a farm of 26 workers and 5120 tasks. Each task is 50ms long and has a size of 100 bytes. Using processes-based strategy
-res[100] = res.get(100, []); res.get(100).append((26, 9913.782)) # bytes = 100 ms = 50
-Running a farm of 36 workers and 5120 tasks. Each task is 50ms long and has a size of 100 bytes. Using processes-based strategy
-res[100] = res.get(100, []); res.get(100).append((36, 7215.942)) # bytes = 100 ms = 50
-Running a farm of 48 workers and 5120 tasks. Each task is 50ms long and has a size of 100 bytes. Using processes-based strategy
-res[100] = res.get(100, []); res.get(100).append((48, 5482.052)) # bytes = 100 ms = 50
-Running a farm of 64 workers and 5120 tasks. Each task is 50ms long and has a size of 100 bytes. Using processes-based strategy
-res[100] = res.get(100, []); res.get(100).append((64, 4197.795)) # bytes = 100 ms = 50
+25,28,29,30,32,30,34,38,36,38,40,38,44,43,42,43,44,46,47,50,47,51,44,47,47,45,
