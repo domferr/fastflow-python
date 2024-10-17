@@ -1,8 +1,12 @@
 # FastFlow Python API
 
-🤩 Unlock the full potential of parallel computing in **Python** with FastFlow, a powerful library that overcomes Python’s Global Interpreter Lock (GIL) and brings **high-performance, scalable parallelism right to your fingertips**. By seamlessly binding Python to the FastFlow C++ library, this package empowers developers to implement advanced parallel patterns and building blocks, like pipelines, farms, and all-to-all, with ease.
+Unlock the full potential of parallel computing in **Python** with FastFlow, a powerful C++ library now available in Python, that brings **high-performance, scalable parallelism right to your fingertips**.
 
-🚀🚀 Experience lightning-fast parallel execution with zero boilerplate code. Whether you’re processing massive datasets, building scalable applications, or designing high-throughput systems, FastFlow delivers the speed and efficiency you've been looking for.
+- 🤩 Implement advanced parallel patterns and building blocks, like pipelines, farms, and all-to-all, with ease.
+- 🚀🚀 Experience lightning-fast parallel execution with zero boilerplate code.
+- 💡 It overcomes Python’s Global Interpreter Lock (GIL) limitations for you. You can leverage on multiple processes or subinterpreters.
+
+Whether you’re processing massive datasets, building scalable applications, or designing high-throughput systems, FastFlow delivers the speed and efficiency you've been looking for.
 
 ## Table of Contents
 - [Installation](#installation)
