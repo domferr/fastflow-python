@@ -34,6 +34,8 @@ To install **fastflow**, ensure you have the following dependencies: `python3`, 
 
 ## Usage
 
+<img src="https://github.com/user-attachments/assets/f94620dc-3133-4002-9238-1416a602f10c" align="right" height="92"/>
+
 ### Farm
 
 The Farm pattern consists of an emitter, multiple workers, and a collector. It distributes tasks from the emitter to workers and collects the results in the collector. Both emitter and collector are optional.
@@ -79,6 +81,7 @@ farm.add_collector(sinknode)
 # finally run the farm. Blocking call: will resume when the farm ends
 farm.run_and_wait_end()
 ```
+<img src="https://github.com/user-attachments/assets/65bd9fa0-4c01-47e9-afa4-82209352157d" align="right" height="42"/>
 
 ### Pipeline
 
@@ -118,20 +121,19 @@ pipe = FFPipeline(True)
 sourcenode = source()
 # create the second stage
 st1 = stage('st1')
-# create the third stage
-st2 = stage('st2')
 # create last stage
 sinknode = sink()
 # add all the stages
 pipe.add_stage(sourcenode)
 pipe.add_stage(st1)
-pipe.add_stage(st2)
 pipe.add_stage(sinknode)
 # finally run the pipeline. Blocking call: will resume when the pipeline ends
 pipe.run_and_wait_end()
 # print how many milliseconds the pipeline took
 print(f"pipeline done in {farm.ffTime()}ms")
 ```
+
+<img src="https://github.com/user-attachments/assets/cc074e33-d059-4edd-bef8-33a46d50ea9c" align="right" height="92"/>
 
 ### All-to-All
 
