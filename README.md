@@ -1,6 +1,6 @@
 # FastFlow Python API
 
-Unlock the full potential of parallel computing in **Python** with FastFlow, a powerful C++ library now available in Python, that brings **high-performance, scalable parallelism right to your fingertips**.
+Unlock the full potential of parallel computing in **Python** with [FastFlow](https://github.com/fastflow/fastflow), a powerful C++ library now available in Python, that brings **high-performance, scalable parallelism right to your fingertips**.
 
 - 🤩 Implement advanced parallel patterns and building blocks, like pipelines, farms, and all-to-all, with ease.
 - 🚀🚀 Experience lightning-fast parallel execution with zero boilerplate code.
@@ -26,7 +26,7 @@ Whether you’re processing massive datasets, building scalable applications, or
 
 ## Installation
 
-To install **fastflow**, ensure you have the following dependencies: `python3`, `python3-venv` and `python3-dev`. For example on Ubuntu you can install them using `apt install`.
+To install **fastflow**, ensure you have the following dependencies: `python3`, `python3-venv` and `python3-dev`. For example on Ubuntu you can install them using `apt install`. Ensure you have updated submodules by running `git submodule init && git submodule update`.
 
 1. From the root directory, create virtual environment via `python3 -m venv .venv`
 2. From the root directory, activate the virtual environment by running `source .venv/bin/activate`
@@ -484,6 +484,10 @@ pipeline.add_stage(sink())
 
 pipeline.run_and_wait_end()
 ```
+
+## Test CI locally
+
+To test the CI locally (optional), useful to test changes before actually change the whole ci, `pip install cibuildwheel` and then run `cibuildwheel --platform linux` or `make ci`.
 
 ## Contributing
 
