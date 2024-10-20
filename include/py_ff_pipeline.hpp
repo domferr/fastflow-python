@@ -11,7 +11,8 @@
 #include <structmember.h>
 #include <ff/ff.hpp>
 #include <iostream>
-#include "node_utils.hpp"
+#include "python_args_utils.hpp"
+#include "building_blocks_utils.hpp"
 #include "py_ff_a2a.fwd.hpp"
 #include "process/ff_node_process.hpp"
 
@@ -19,6 +20,7 @@ typedef struct {
     PyObject_HEAD
     bool use_subinterpreters;
     ff::ff_pipeline* pipeline;
+    ff::ff_pipeline* accelerator;
 } py_ff_pipeline_object;
 
 PyObject *py_ff_pipeline_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
@@ -28,7 +30,8 @@ PyObject *py_ff_pipeline_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     if(self != NULL){ // -> allocation successfull
         // assign initial values
         self->use_subinterpreters = false;
-        self->pipeline = NULL; 
+        self->pipeline = NULL;
+        self->accelerator = NULL;
     }
     return (PyObject*) self;
 }
@@ -39,7 +42,7 @@ int py_ff_pipeline_init(PyObject *self, PyObject *args, PyObject *kwds)
 
     PyObject* bool_arg = Py_False;
     if (!PyArg_ParseTuple(args, "|O", &bool_arg)) {
-        PyErr_SetString(PyExc_RuntimeError, "Error parsing tuple");
+        PyErr_SetString(PyExc_TypeError, "Error parsing arguments");
         return -1;
     } else if (bool_arg != nullptr && !PyBool_Check(bool_arg)) {
         PyErr_Format(PyExc_TypeError, "A bool is required (got type %s)",
@@ -66,12 +69,14 @@ int py_ff_pipeline_init(PyObject *self, PyObject *args, PyObject *kwds)
         PyObject_Free(m->pipeline);
         m->pipeline = NULL;
         m->use_subinterpreters = false;
+        m->accelerator = NULL;
         PyErr_SetString(PyExc_RuntimeError, ex.what());
         return -1;
     } catch(...) {
         PyObject_Free(m->pipeline);
         m->pipeline = NULL;
         m->use_subinterpreters = false;
+        m->accelerator = NULL;
         PyErr_SetString(PyExc_RuntimeError, "Initialization failed");
         return -1;
     }
@@ -88,13 +93,14 @@ void py_ff_pipeline_dealloc(py_ff_pipeline_object *self)
     if(m->pipeline) {
         m->pipeline->~ff_pipeline();
         PyObject_Free(m->pipeline);
+        if (m->accelerator) m->accelerator->~ff_pipeline();
     }
 
     tp->tp_free(self);
     Py_DECREF(tp);
 }
 
-PyDoc_STRVAR(py_ff_pipeline_ffTime_doc, "Return an incrmented integer");
+PyDoc_STRVAR(py_ff_pipeline_ffTime_doc, "Return the time spent by the pipeline");
 
 PyObject* py_ff_pipeline_ffTime(PyObject *self, PyObject *args)
 {
@@ -115,9 +121,46 @@ PyObject* py_ff_pipeline_run_and_wait_end(PyObject *self, PyObject *args)
     return run_and_wait_end(_self->pipeline, _self->use_subinterpreters);
 }
 
-struct forwarder_minode: ff::ff_minode {  
-    void *svc(void *in) { return in; }
-};
+PyDoc_STRVAR(py_ff_pipeline_run_doc, "Run the pipeline asynchronously");
+
+PyObject* py_ff_pipeline_run(PyObject *self, PyObject *args)
+{
+    assert(self);
+
+    py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
+    run_accelerator(&_self->accelerator, _self->pipeline, _self->use_subinterpreters);
+    return Py_None;
+}
+
+PyDoc_STRVAR(py_ff_pipeline_wait_doc, "Wait for the pipeline to complete all its tasks");
+
+PyObject* py_ff_pipeline_wait(PyObject *self, PyObject *args)
+{
+    assert(self);
+
+    py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
+    return wait(_self->pipeline, _self->use_subinterpreters);
+}
+
+PyDoc_STRVAR(py_ff_pipeline_submit_doc, "Submit data to first stage of the pipeline");
+
+PyObject* py_ff_pipeline_submit(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
+    return submit(_self->accelerator, arg);
+}
+
+PyDoc_STRVAR(py_ff_pipeline_collect_next_doc, "Collect next output data");
+
+PyObject* py_ff_pipeline_collect_next(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
+    return collect_next(_self->accelerator);
+}
 
 PyDoc_STRVAR(py_ff_pipeline_add_stage_doc, "Add a stage to the pipeline");
 
@@ -185,7 +228,6 @@ PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *args, PyObject *kwd
                 delete last_stage;
             }
         } else if (!is_a2a && last_stage->isAll2All()) {
-            //node = new ff::internal_mi_transformer(node, false);
             auto *minode = new forwarder_minode();
             node = new ff::ff_comb(minode, node, true);
         }
@@ -227,6 +269,14 @@ static PyMethodDef py_ff_pipeline_methods[] = {
         METH_NOARGS, py_ff_pipeline_ffTime_doc },
     { "run_and_wait_end", (PyCFunction) py_ff_pipeline_run_and_wait_end, 
         METH_NOARGS, py_ff_pipeline_run_and_wait_end_doc },
+    { "run", (PyCFunction) py_ff_pipeline_run, 
+        METH_NOARGS, py_ff_pipeline_run_doc },
+    { "wait", (PyCFunction) py_ff_pipeline_wait, 
+        METH_NOARGS, py_ff_pipeline_wait_doc },
+    { "submit", (PyCFunction) py_ff_pipeline_submit, 
+        METH_O, py_ff_pipeline_submit_doc },
+    { "collect_next", (PyCFunction) py_ff_pipeline_collect_next, 
+        METH_NOARGS, py_ff_pipeline_collect_next_doc },
     { "add_stage",        (PyCFunction) py_ff_pipeline_add_stage, 
         METH_VARARGS | METH_KEYWORDS, py_ff_pipeline_add_stage_doc },
     { "blocking_mode", (PyCFunction) py_ff_pipeline_blocking_mode, 

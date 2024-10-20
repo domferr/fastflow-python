@@ -16,7 +16,8 @@
 #include "subint/ff_node_subint.hpp"
 #include "process/ff_monode_process.hpp"
 #include "process/ff_node_process.hpp"
-#include "node_utils.hpp"
+#include "python_args_utils.hpp"
+#include "building_blocks_utils.hpp"
 #include "py_ff_pipeline.hpp"
 #include <ff/multinode.hpp>
 #include "py_ff_a2a.fwd.hpp"
@@ -29,6 +30,7 @@ PyObject *py_ff_a2a_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         // assign initial values
         self->use_subinterpreters = false;
         self->a2a = NULL; 
+        self->accelerator = NULL;
     }
     return (PyObject*) self;
 }
@@ -39,7 +41,8 @@ int py_ff_a2a_init(PyObject *self, PyObject *args, PyObject *kwds)
 
     PyObject* bool_arg = Py_False;
     if (!PyArg_ParseTuple(args, "|O", &bool_arg)) {
-        std::cerr << "error parsing tuple" << std::endl;
+        PyErr_SetString(PyExc_TypeError, "Error parsing arguments");
+        return -1;
     } else if (bool_arg != nullptr && !PyBool_Check(bool_arg)) {
         PyErr_Format(PyExc_TypeError, "A bool is required (got type %s)",
                      Py_TYPE(bool_arg)->tp_name);
@@ -66,12 +69,14 @@ int py_ff_a2a_init(PyObject *self, PyObject *args, PyObject *kwds)
         PyObject_Free(m->a2a);
         m->a2a = NULL;
         m->use_subinterpreters = false;
+        m->accelerator = NULL;
         PyErr_SetString(PyExc_RuntimeError, ex.what());
         return -1;
     } catch(...) {
         PyObject_Free(m->a2a);
         m->a2a = NULL;
         m->use_subinterpreters = false;
+        m->accelerator = NULL;
         PyErr_SetString(PyExc_RuntimeError, "Initialization failed");
         return -1;
     }
@@ -88,6 +93,7 @@ void py_ff_a2a_dealloc(py_ff_a2a_object *self)
     if(m->a2a) {
         m->a2a->~ff_a2a();
         PyObject_Free(m->a2a);
+        if (m->accelerator) m->accelerator->~ff_pipeline();
     }
 
     tp->tp_free(self);
@@ -115,7 +121,48 @@ PyObject* py_ff_a2a_run_and_wait_end(PyObject *self, PyObject *args)
     return run_and_wait_end(_self->a2a, _self->use_subinterpreters);
 }
 
-PyDoc_STRVAR(py_ff_a2a_add_firstset_doc, "Add first set to the a2a");
+PyDoc_STRVAR(py_ff_a2a_run_doc, "Run the all to all asynchronously");
+
+PyObject* py_ff_a2a_run(PyObject *self, PyObject *args)
+{
+    assert(self);
+
+    py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
+    run_accelerator(&_self->accelerator, _self->a2a, _self->use_subinterpreters);
+    return Py_None;
+}
+
+PyDoc_STRVAR(py_ff_a2a_wait_doc, "Wait for the all to all to complete all its tasks");
+
+PyObject* py_ff_a2a_wait(PyObject *self, PyObject *args)
+{
+    assert(self);
+
+    py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
+    return wait(_self->a2a, _self->use_subinterpreters);
+}
+
+PyDoc_STRVAR(py_ff_a2a_submit_doc, "Submit data to first stage of the all-to-all");
+
+PyObject* py_ff_a2a_submit(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
+    return submit(_self->accelerator, arg);
+}
+
+PyDoc_STRVAR(py_ff_a2a_collect_next_doc, "Collect next output data");
+
+PyObject* py_ff_a2a_collect_next(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
+    return collect_next(_self->accelerator);
+}
+
+PyDoc_STRVAR(py_ff_a2a_add_firstset_doc, "Add first set to the all-to-all");
 
 PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *args, PyObject* kwds)
 {
@@ -264,6 +311,14 @@ static PyMethodDef py_ff_a2a_methods[] = {
         METH_NOARGS, py_ff_a2a_ffTime_doc },
     { "run_and_wait_end", (PyCFunction) py_ff_a2a_run_and_wait_end, 
         METH_NOARGS, py_ff_a2a_run_and_wait_end_doc },
+    { "run", (PyCFunction) py_ff_a2a_run, 
+        METH_NOARGS, py_ff_a2a_run_doc },
+    { "wait", (PyCFunction) py_ff_a2a_wait, 
+        METH_NOARGS, py_ff_a2a_wait_doc },
+    { "submit", (PyCFunction) py_ff_a2a_submit, 
+        METH_O, py_ff_a2a_submit_doc },
+    { "collect_next", (PyCFunction) py_ff_a2a_collect_next, 
+        METH_NOARGS, py_ff_a2a_collect_next_doc },
     { "add_firstset",      (PyCFunction) py_ff_a2a_add_firstset, 
         METH_VARARGS | METH_KEYWORDS, py_ff_a2a_add_firstset_doc },
     { "add_secondset",      (PyCFunction) py_ff_a2a_add_secondset, 

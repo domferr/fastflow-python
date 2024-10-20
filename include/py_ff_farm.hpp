@@ -14,11 +14,14 @@
 #include "py_ff_node.hpp"
 #include "subint/ff_node_subint.hpp"
 #include "process/ff_node_process.hpp"
+#include "python_args_utils.hpp"
+#include "building_blocks_utils.hpp"
 
 typedef struct {
     PyObject_HEAD
     bool use_subinterpreters;
     ff::ff_farm* farm;
+    ff::ff_pipeline* accelerator;
 } py_ff_farm_object;
 
 PyObject *py_ff_farm_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
@@ -28,7 +31,8 @@ PyObject *py_ff_farm_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     if(self != NULL){ // -> allocation successfull
         // assign initial values
         self->use_subinterpreters = false;
-        self->farm = NULL; 
+        self->farm = NULL;
+        self->accelerator = NULL;
     }
     return (PyObject*) self;
 }
@@ -39,7 +43,8 @@ int py_ff_farm_init(PyObject *self, PyObject *args, PyObject *kwds)
 
     PyObject* bool_arg = Py_False;
     if (!PyArg_ParseTuple(args, "|O", &bool_arg)) {
-        std::cerr << "error parsing tuple" << std::endl;
+        PyErr_SetString(PyExc_TypeError, "Error parsing arguments");
+        return -1;
     } else if (bool_arg != nullptr && !PyBool_Check(bool_arg)) {
         PyErr_Format(PyExc_TypeError, "A bool is required (got type %s)",
                      Py_TYPE(bool_arg)->tp_name);
@@ -66,12 +71,14 @@ int py_ff_farm_init(PyObject *self, PyObject *args, PyObject *kwds)
         PyObject_Free(m->farm);
         m->farm = NULL;
         m->use_subinterpreters = false;
+        m->accelerator = NULL;
         PyErr_SetString(PyExc_RuntimeError, ex.what());
         return -1;
     } catch(...) {
         PyObject_Free(m->farm);
         m->farm = NULL;
         m->use_subinterpreters = false;
+        m->accelerator = NULL;
         PyErr_SetString(PyExc_RuntimeError, "Initialization failed");
         return -1;
     }
@@ -88,6 +95,7 @@ void py_ff_farm_dealloc(py_ff_farm_object *self)
     if(m->farm) {
         m->farm->~ff_farm();
         PyObject_Free(m->farm);
+        if (m->accelerator) m->accelerator->~ff_pipeline();
     }
 
     tp->tp_free(self);
@@ -113,6 +121,47 @@ PyObject* py_ff_farm_run_and_wait_end(PyObject *self, PyObject *args)
 
     py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
     return run_and_wait_end(_self->farm, _self->use_subinterpreters);
+}
+
+PyDoc_STRVAR(py_ff_farm_run_doc, "Run the farm asynchronously");
+
+PyObject* py_ff_farm_run(PyObject *self, PyObject *args)
+{
+    assert(self);
+
+    py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
+    run_accelerator(&_self->accelerator, _self->farm, _self->use_subinterpreters);
+    return Py_None;
+}
+
+PyDoc_STRVAR(py_ff_farm_wait_doc, "Wait for the farm to complete all its tasks");
+
+PyObject* py_ff_farm_wait(PyObject *self, PyObject *args)
+{
+    assert(self);
+
+    py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
+    return wait(_self->farm, _self->use_subinterpreters);
+}
+
+PyDoc_STRVAR(py_ff_farm_submit_doc, "Submit data to first stage of the farm");
+
+PyObject* py_ff_farm_submit(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
+    return submit(_self->accelerator, arg);
+}
+
+PyDoc_STRVAR(py_ff_farm_collect_next_doc, "Collect next output data");
+
+PyObject* py_ff_farm_collect_next(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
+    return collect_next(_self->accelerator);
 }
 
 PyDoc_STRVAR(py_ff_farm_add_emitter_doc, "Add emitter to the farm");
@@ -212,6 +261,14 @@ static PyMethodDef py_ff_farm_methods[] = {
         METH_NOARGS, py_ff_farm_ffTime_doc },
     { "run_and_wait_end", (PyCFunction) py_ff_farm_run_and_wait_end, 
         METH_NOARGS, py_ff_farm_run_and_wait_end_doc },
+    { "run", (PyCFunction) py_ff_farm_run, 
+        METH_NOARGS, py_ff_farm_run_doc },
+    { "wait", (PyCFunction) py_ff_farm_wait, 
+        METH_NOARGS, py_ff_farm_wait_doc },
+    { "submit", (PyCFunction) py_ff_farm_submit, 
+        METH_O, py_ff_farm_submit_doc },
+    { "collect_next", (PyCFunction) py_ff_farm_collect_next, 
+        METH_NOARGS, py_ff_farm_collect_next_doc },
     { "add_workers",      (PyCFunction) py_ff_farm_add_workers, 
         METH_VARARGS | METH_KEYWORDS, py_ff_farm_add_workers_doc },
     { "add_emitter",      (PyCFunction) py_ff_farm_add_emitter, 
@@ -241,7 +298,7 @@ static PyType_Slot py_ff_farm_slots[] = {
 
 static PyType_Spec spec_py_ff_farm = {
     "FFFarm",                                  // name
-    sizeof(py_ff_farm_object) + sizeof(ff::ff_pipeline),    // basicsize
+    sizeof(py_ff_farm_object) + sizeof(ff::ff_farm),    // basicsize
     0,                                          // itemsize
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   // flags
     py_ff_farm_slots                               // slots

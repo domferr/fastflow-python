@@ -35,7 +35,8 @@ public:
         CHECK_ERROR_THEN("load pickle and unpickle failure: ", return -1;)
 
         // serialize Python node to bytes
-        auto node_ser = pickling_main.pickle(node);
+        std::string node_ser;
+        if (pickling_main.pickle(node, node_ser) < 0) return -1;
         CHECK_ERROR_THEN("pickle node failure: ", return -1;)
 
         PyObject* globals = get_globals();
@@ -144,11 +145,10 @@ public:
     void * svc(void *arg) {
         TIMESTART(svc_start_time);
         // arg may be equal to ff::FF_GO_ON in case of a node of a first set of an a2a that hasn't input channels
-        PyObject* pickled_bytes = arg == ff::FF_GO_ON || arg == NULL ? NULL:reinterpret_cast<PyObject*>(arg);
+        std::string* serialized_data = arg == ff::FF_GO_ON || arg == NULL ? NULL:reinterpret_cast<std::string*>(arg);
         
-        PyObject* py_args = arg == ff::FF_GO_ON || arg == NULL ? nullptr:pickl->unpickle_bytes(pickled_bytes);
+        PyObject* py_args = arg == ff::FF_GO_ON || arg == NULL ? nullptr:pickl->unpickle(*serialized_data);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
-        //if (pickled_bytes) Py_DECREF(pickled_bytes);
         
         PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
@@ -166,13 +166,14 @@ public:
             return _const_result->ff_const;
         }
 
-        auto pickled_result_bytes = pickl->pickle_bytes(py_result);
+        std::string* pickled_result;
+        int err = pickl->pickle_ptr(py_result, &pickled_result);
+        if (err < 0) return NULL;
         CHECK_ERROR_THEN("pickle result failure: ", return NULL;)
-        //Py_INCREF(pickled_result_bytes);
         
         LOGELAPSED("svc time ", svc_start_time);
 
-        return (void*) pickled_result_bytes;
+        return (void*) pickled_result;
     }
 
     void cleanup() {
@@ -220,10 +221,12 @@ public:
             return res ? Py_True:Py_False;
         }
 
-        auto pickled_data_bytes = pickl->pickle_bytes(py_data);
+        std::string* pickled_data;
+        int err = pickl->pickle_ptr(py_data, &pickled_data);
+        if (err < 0) return NULL;
         CHECK_ERROR_THEN("pickle send out data failure: ", return NULL;)
 
-        return registered_callback->ff_send_out(pickled_data_bytes, index) ? Py_True:Py_False;
+        return registered_callback->ff_send_out(pickled_data, index) ? Py_True:Py_False;
     }
 
     void register_callback(ff::ff_monode* cb_node) {

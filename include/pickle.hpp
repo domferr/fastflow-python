@@ -22,29 +22,30 @@ public:
         //Py_DECREF(pkl_load_func);
     }
 
-    PyObject* pickle_bytes(PyObject* object, int protocol = 5) {
-        PyObject* protocol_obj = PyLong_FromLong(protocol);
-        PyObject* decoded_bytes = PyObject_CallFunctionObjArgs(pkl_dump_func, object, protocol_obj, nullptr);
-        Py_DECREF(protocol_obj);
-        return decoded_bytes;
-    }
-
-    PyObject* unpickle_bytes(PyObject* pickled_bytes) {
-        return PyObject_CallFunctionObjArgs(pkl_load_func, pickled_bytes, nullptr);
-    }
-
-    std::string pickle(PyObject* object, int protocol = 5) {
+    int pickle_ptr(PyObject* object, std::string** str, int protocol = 5) {
         PyObject* decoded_bytes = pickle_bytes(object, protocol);
         Py_ssize_t len;
         char *res = NULL;
         int err = PyBytes_AsStringAndSize(decoded_bytes, &res, &len);
-        if (err < 0) return NULL;
+        if (err < 0) return err;
 
-        std::string str;
+        *str = new std::string(res, len);
+
+        Py_DECREF(decoded_bytes);
+        return err;
+    }
+
+    int pickle(PyObject* object, std::string& str, int protocol = 5) {
+        PyObject* decoded_bytes = pickle_bytes(object, protocol);
+        Py_ssize_t len;
+        char *res = NULL;
+        int err = PyBytes_AsStringAndSize(decoded_bytes, &res, &len);
+        if (err < 0) return err;
+
         str.assign(res, len);
 
         Py_DECREF(decoded_bytes);
-        return str;
+        return err;
     }
 
     PyObject* unpickle(std::string &str) {
@@ -57,6 +58,17 @@ public:
 private:
     PyObject* pkl_dump_func;
     PyObject* pkl_load_func;
+
+    PyObject* pickle_bytes(PyObject* object, int protocol = 5) {
+        PyObject* protocol_obj = PyLong_FromLong(protocol);
+        PyObject* decoded_bytes = PyObject_CallFunctionObjArgs(pkl_dump_func, object, protocol_obj, nullptr);
+        Py_DECREF(protocol_obj);
+        return decoded_bytes;
+    }
+
+    PyObject* unpickle_bytes(PyObject* pickled_bytes) {
+        return PyObject_CallFunctionObjArgs(pkl_load_func, pickled_bytes, nullptr);
+    }
 };
 
 #endif //PICKLE_HPP

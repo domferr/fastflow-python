@@ -57,7 +57,8 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
                 return (PyObject*) NULL;
             }
         } else {
-            auto data = pickl.pickle(pydata);
+            std::string data;
+            pickl.pickle(pydata, data);
             int err = messaging.call_remote(response, "ff_send_out", data, index);
             if (PyErr_Occurred()) return (PyObject*) NULL;
             if (err <= 0)  {
@@ -125,7 +126,8 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
                     err = messaging.send_response(ff::FF_GO_ON);
                 } else {
                     // send serialized response
-                    auto resp = pickl.pickle(py_result);
+                    std::string resp;
+                    pickl.pickle(py_result, resp);
                     err = messaging.send_response(resp);
                     CHECK_ERROR_THEN("[child] pickle result failure: ", cleanup_exit();)
                     Py_DECREF(py_result);
@@ -177,7 +179,8 @@ public:
         int returnValue = 0;
         pickling pickl;
         CHECK_ERROR_THEN("load pickle/unpickle failure: ", return -1;)
-        auto node_ser = pickl.pickle(node);
+        std::string node_ser;
+        pickl.pickle(node, node_ser);
 
         TIMESTART(svc_init_fork);
         // from cpython source code

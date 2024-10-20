@@ -44,7 +44,7 @@ def run_test(use_subinterpreters = True):
     source_a2a = FFAllToAll(use_subinterpreters)
     second_stage_size = 3
     # build first stages
-    source_first_lis = [source("source")]
+    source_first_lis = [a2astage("source")]
     # add first stages
     source_a2a.add_firstset(source_first_lis)
 
@@ -67,8 +67,11 @@ def run_test(use_subinterpreters = True):
     # add second stages
     a2a.add_secondset(second_lis)
     pipe.add_stage(a2a)
-    
-    pipe.run_and_wait_end()
+    pipe.run()
+    for i in range(5):
+        pipe.submit([f"data-{i}"])
+    pipe.submit(EOS)
+    pipe.wait()
 
 if __name__ == "__main__":
     if sys.version_info[1] >= 12:

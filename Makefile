@@ -4,8 +4,11 @@
 build: clean
 	pip install .
 
-ci:
+ci: clean
 	cibuildwheel --platform linux
 
 clean:
 	rm -rf build
+
+# example to run all the tests
+# for file in $(ls tests/python/*.py); do echo "$file" && python3.12 $file; done

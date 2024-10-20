@@ -1,6 +1,16 @@
 from fastflow import FFFarm, EOS
 import sys
 
+"""
+             _ worker _
+            |          |
+            |_ worker _|
+  source ---|          |--- sink
+            |_ worker _|
+            |          |
+            |_ worker _|
+"""
+
 class source():
     def __init__(self):
         self.counter = 1
