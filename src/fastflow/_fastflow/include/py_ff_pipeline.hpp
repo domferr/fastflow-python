@@ -15,6 +15,7 @@
 #include "building_blocks_utils.hpp"
 #include "py_ff_a2a.fwd.hpp"
 #include "process/ff_node_process.hpp"
+#include "docstring_macros.hpp"
 
 typedef struct {
     PyObject_HEAD
@@ -100,7 +101,7 @@ void py_ff_pipeline_dealloc(py_ff_pipeline_object *self)
     Py_DECREF(tp);
 }
 
-PyDoc_STRVAR(py_ff_pipeline_ffTime_doc, "Return the time spent by the pipeline");
+ffTime_doc(py_ff_pipeline_ffTime_doc, "pipeline");
 
 PyObject* py_ff_pipeline_ffTime(PyObject *self, PyObject *args)
 {
@@ -111,7 +112,7 @@ PyObject* py_ff_pipeline_ffTime(PyObject *self, PyObject *args)
     return PyFloat_FromDouble(val);
 }
 
-PyDoc_STRVAR(py_ff_pipeline_run_and_wait_end_doc, "Run the pipeline and wait for the end");
+run_and_wait_end_doc(py_ff_pipeline_run_and_wait_end_doc, "pipeline");
 
 PyObject* py_ff_pipeline_run_and_wait_end(PyObject *self, PyObject *args)
 {
@@ -121,7 +122,7 @@ PyObject* py_ff_pipeline_run_and_wait_end(PyObject *self, PyObject *args)
     return run_and_wait_end(_self->pipeline, _self->use_subinterpreters);
 }
 
-PyDoc_STRVAR(py_ff_pipeline_run_doc, "Run the pipeline asynchronously");
+run_doc(py_ff_pipeline_run_doc, "pipeline");
 
 PyObject* py_ff_pipeline_run(PyObject *self, PyObject *args)
 {
@@ -132,7 +133,7 @@ PyObject* py_ff_pipeline_run(PyObject *self, PyObject *args)
     return Py_None;
 }
 
-PyDoc_STRVAR(py_ff_pipeline_wait_doc, "Wait for the pipeline to complete all its tasks");
+wait_doc(py_ff_pipeline_wait_doc, "pipeline");
 
 PyObject* py_ff_pipeline_wait(PyObject *self, PyObject *args)
 {
@@ -142,7 +143,7 @@ PyObject* py_ff_pipeline_wait(PyObject *self, PyObject *args)
     return wait(_self->pipeline, _self->use_subinterpreters);
 }
 
-PyDoc_STRVAR(py_ff_pipeline_submit_doc, "Submit data to first stage of the pipeline");
+submit_doc(py_ff_pipeline_submit_doc, "pipeline");
 
 PyObject* py_ff_pipeline_submit(PyObject *self, PyObject *arg)
 {
@@ -152,7 +153,7 @@ PyObject* py_ff_pipeline_submit(PyObject *self, PyObject *arg)
     return submit(_self->accelerator, arg);
 }
 
-PyDoc_STRVAR(py_ff_pipeline_collect_next_doc, "Collect next output data");
+collect_next_doc(py_ff_pipeline_collect_next_doc, "pipeline");
 
 PyObject* py_ff_pipeline_collect_next(PyObject *self, PyObject *arg)
 {
@@ -162,7 +163,7 @@ PyObject* py_ff_pipeline_collect_next(PyObject *self, PyObject *arg)
     return collect_next(_self->accelerator);
 }
 
-PyDoc_STRVAR(py_ff_pipeline_add_stage_doc, "Add a stage to the pipeline");
+doc(py_ff_pipeline_add_stage_doc, "add_stage(self, stage)", "Add a stage to the pipeline");
 
 PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *args, PyObject *kwds)
 {
@@ -237,7 +238,7 @@ PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *args, PyObject *kwd
     return PyLong_FromLong(val);
 }
 
-PyDoc_STRVAR(py_ff_pipeline_blocking_mode_doc, "Set pipeline's blocking mode");
+blocking_mode_doc(py_ff_pipeline_blocking_mode_doc, "pipeline");
 
 PyObject* py_ff_pipeline_blocking_mode(PyObject *self, PyObject *arg)
 {
@@ -252,7 +253,7 @@ PyObject* py_ff_pipeline_blocking_mode(PyObject *self, PyObject *arg)
     return Py_None;
 }
 
-PyDoc_STRVAR(py_ff_pipeline_no_mapping_doc, "Disable fastflow's mapping for this pipeline");
+no_mapping_doc(py_ff_pipeline_no_mapping_doc, "pipeline");
 
 PyObject* py_ff_pipeline_no_mapping(PyObject *self, PyObject *arg)
 {

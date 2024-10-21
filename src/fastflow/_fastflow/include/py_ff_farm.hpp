@@ -16,6 +16,7 @@
 #include "process/ff_node_process.hpp"
 #include "python_args_utils.hpp"
 #include "building_blocks_utils.hpp"
+#include "docstring_macros.hpp"
 
 typedef struct {
     PyObject_HEAD
@@ -102,7 +103,7 @@ void py_ff_farm_dealloc(py_ff_farm_object *self)
     Py_DECREF(tp);
 }
 
-PyDoc_STRVAR(py_ff_farm_ffTime_doc, "Return the time elapsed");
+ffTime_doc(py_ff_farm_ffTime_doc, "farm");
 
 PyObject* py_ff_farm_ffTime(PyObject *self, PyObject *args)
 {
@@ -113,7 +114,7 @@ PyObject* py_ff_farm_ffTime(PyObject *self, PyObject *args)
     return PyFloat_FromDouble(val);
 }
 
-PyDoc_STRVAR(py_ff_farm_run_and_wait_end_doc, "Run the farm and wait for the end");
+run_and_wait_end_doc(py_ff_farm_run_and_wait_end_doc, "farm");
 
 PyObject* py_ff_farm_run_and_wait_end(PyObject *self, PyObject *args)
 {
@@ -123,7 +124,7 @@ PyObject* py_ff_farm_run_and_wait_end(PyObject *self, PyObject *args)
     return run_and_wait_end(_self->farm, _self->use_subinterpreters);
 }
 
-PyDoc_STRVAR(py_ff_farm_run_doc, "Run the farm asynchronously");
+run_doc(py_ff_farm_run_doc, "farm");
 
 PyObject* py_ff_farm_run(PyObject *self, PyObject *args)
 {
@@ -134,7 +135,7 @@ PyObject* py_ff_farm_run(PyObject *self, PyObject *args)
     return Py_None;
 }
 
-PyDoc_STRVAR(py_ff_farm_wait_doc, "Wait for the farm to complete all its tasks");
+wait_doc(py_ff_farm_wait_doc, "farm");
 
 PyObject* py_ff_farm_wait(PyObject *self, PyObject *args)
 {
@@ -144,7 +145,7 @@ PyObject* py_ff_farm_wait(PyObject *self, PyObject *args)
     return wait(_self->farm, _self->use_subinterpreters);
 }
 
-PyDoc_STRVAR(py_ff_farm_submit_doc, "Submit data to first stage of the farm");
+submit_doc(py_ff_farm_submit_doc, "farm");
 
 PyObject* py_ff_farm_submit(PyObject *self, PyObject *arg)
 {
@@ -154,7 +155,7 @@ PyObject* py_ff_farm_submit(PyObject *self, PyObject *arg)
     return submit(_self->accelerator, arg);
 }
 
-PyDoc_STRVAR(py_ff_farm_collect_next_doc, "Collect next output data");
+collect_next_doc(py_ff_farm_collect_next_doc, "farm");
 
 PyObject* py_ff_farm_collect_next(PyObject *self, PyObject *arg)
 {
@@ -164,7 +165,7 @@ PyObject* py_ff_farm_collect_next(PyObject *self, PyObject *arg)
     return collect_next(_self->accelerator);
 }
 
-PyDoc_STRVAR(py_ff_farm_add_emitter_doc, "Add emitter to the farm");
+doc(py_ff_farm_add_emitter_doc, "add_emitter(self, node, /)", "Add emitter to the farm");
 
 PyObject* py_ff_farm_add_emitter(PyObject *self, PyObject *args, PyObject *kwds)
 {
@@ -180,7 +181,7 @@ PyObject* py_ff_farm_add_emitter(PyObject *self, PyObject *args, PyObject *kwds)
     return PyLong_FromLong(val);
 }
 
-PyDoc_STRVAR(py_ff_farm_add_workers_doc, "Add workers to the farm");
+doc(py_ff_farm_add_workers_doc, "add_workers(self, list, /)", "Add workers to the farm");
 
 PyObject* py_ff_farm_add_workers(PyObject *self, PyObject *args, PyObject *kwds)
 {
@@ -214,7 +215,7 @@ PyObject* py_ff_farm_add_workers(PyObject *self, PyObject *args, PyObject *kwds)
     return PyLong_FromLong(val);
 }
 
-PyDoc_STRVAR(py_ff_farm_add_collector_doc, "Add collector to the farm");
+doc(py_ff_farm_add_collector_doc, "add_collector(self, node, /)", "Add collector to the farm");
 
 PyObject* py_ff_farm_add_collector(PyObject *self, PyObject *args, PyObject *kwds)
 {
@@ -229,7 +230,7 @@ PyObject* py_ff_farm_add_collector(PyObject *self, PyObject *args, PyObject *kwd
     return PyLong_FromLong(val);
 }
 
-PyDoc_STRVAR(py_ff_farm_blocking_mode_doc, "Set farm's blocking mode");
+blocking_mode_doc(py_ff_farm_blocking_mode_doc, "farm");
 
 PyObject* py_ff_farm_blocking_mode(PyObject *self, PyObject *arg)
 {
@@ -244,7 +245,7 @@ PyObject* py_ff_farm_blocking_mode(PyObject *self, PyObject *arg)
     return Py_None;
 }
 
-PyDoc_STRVAR(py_ff_farm_no_mapping_doc, "Disable fastflow's mapping for this farm");
+no_mapping_doc(py_ff_farm_no_mapping_doc, "farm");
 
 PyObject* py_ff_farm_no_mapping(PyObject *self, PyObject *arg)
 {
@@ -297,7 +298,7 @@ static PyType_Slot py_ff_farm_slots[] = {
 };
 
 static PyType_Spec spec_py_ff_farm = {
-    "FFFarm",                                  // name
+    "fastflow.FFFarm",                                  // name
     sizeof(py_ff_farm_object) + sizeof(ff::ff_farm),    // basicsize
     0,                                          // itemsize
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   // flags

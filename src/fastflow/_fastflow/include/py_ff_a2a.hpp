@@ -21,6 +21,7 @@
 #include "py_ff_pipeline.hpp"
 #include <ff/multinode.hpp>
 #include "py_ff_a2a.fwd.hpp"
+#include "docstring_macros.hpp"
 
 PyObject *py_ff_a2a_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -100,7 +101,7 @@ void py_ff_a2a_dealloc(py_ff_a2a_object *self)
     Py_DECREF(tp);
 }
 
-PyDoc_STRVAR(py_ff_a2a_ffTime_doc, "Return the time elapsed");
+ffTime_doc(py_ff_a2a_ffTime_doc, "all to all");
 
 PyObject* py_ff_a2a_ffTime(PyObject *self, PyObject *args)
 {
@@ -111,7 +112,7 @@ PyObject* py_ff_a2a_ffTime(PyObject *self, PyObject *args)
     return PyFloat_FromDouble(val);
 }
 
-PyDoc_STRVAR(py_ff_a2a_run_and_wait_end_doc, "Run the all to all and wait for the end");
+run_and_wait_end_doc(py_ff_a2a_run_and_wait_end_doc, "all to all");
 
 PyObject* py_ff_a2a_run_and_wait_end(PyObject *self, PyObject *args)
 {
@@ -121,7 +122,7 @@ PyObject* py_ff_a2a_run_and_wait_end(PyObject *self, PyObject *args)
     return run_and_wait_end(_self->a2a, _self->use_subinterpreters);
 }
 
-PyDoc_STRVAR(py_ff_a2a_run_doc, "Run the all to all asynchronously");
+run_doc(py_ff_a2a_run_doc, "all to all");
 
 PyObject* py_ff_a2a_run(PyObject *self, PyObject *args)
 {
@@ -132,7 +133,7 @@ PyObject* py_ff_a2a_run(PyObject *self, PyObject *args)
     return Py_None;
 }
 
-PyDoc_STRVAR(py_ff_a2a_wait_doc, "Wait for the all to all to complete all its tasks");
+wait_doc(py_ff_a2a_wait_doc, "all to all");
 
 PyObject* py_ff_a2a_wait(PyObject *self, PyObject *args)
 {
@@ -142,7 +143,7 @@ PyObject* py_ff_a2a_wait(PyObject *self, PyObject *args)
     return wait(_self->a2a, _self->use_subinterpreters);
 }
 
-PyDoc_STRVAR(py_ff_a2a_submit_doc, "Submit data to first stage of the all-to-all");
+submit_doc(py_ff_a2a_submit_doc, "all to all");
 
 PyObject* py_ff_a2a_submit(PyObject *self, PyObject *arg)
 {
@@ -152,7 +153,7 @@ PyObject* py_ff_a2a_submit(PyObject *self, PyObject *arg)
     return submit(_self->accelerator, arg);
 }
 
-PyDoc_STRVAR(py_ff_a2a_collect_next_doc, "Collect next output data");
+collect_next_doc(py_ff_a2a_collect_next_doc, "all to all");
 
 PyObject* py_ff_a2a_collect_next(PyObject *self, PyObject *arg)
 {
@@ -162,7 +163,7 @@ PyObject* py_ff_a2a_collect_next(PyObject *self, PyObject *arg)
     return collect_next(_self->accelerator);
 }
 
-PyDoc_STRVAR(py_ff_a2a_add_firstset_doc, "Add first set to the all-to-all");
+doc(py_ff_a2a_add_firstset_doc, "add_firstset(self, list, ondemand=False /)", "Add first set to the all to all");
 
 PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *args, PyObject* kwds)
 {
@@ -236,7 +237,7 @@ PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *args, PyObject* kwds)
     return PyLong_FromLong(val);
 }
 
-PyDoc_STRVAR(py_ff_a2a_add_secondset_doc, "Add second set to the a2a");
+doc(py_ff_a2a_add_secondset_doc, "add_secondset(self, list, ondemand=False, /)", "Add second set to the all to all");
 
 PyObject* py_ff_a2a_add_secondset(PyObject *self, PyObject *args, PyObject *kwds)
 {
@@ -279,7 +280,7 @@ PyObject* py_ff_a2a_add_secondset(PyObject *self, PyObject *args, PyObject *kwds
     return PyLong_FromLong(val);
 }
 
-PyDoc_STRVAR(py_ff_a2a_blocking_mode_doc, "Set all to all's blocking mode");
+blocking_mode_doc(py_ff_a2a_blocking_mode_doc, "all to all");
 
 PyObject* py_ff_a2a_blocking_mode(PyObject *self, PyObject *arg)
 {
@@ -294,7 +295,7 @@ PyObject* py_ff_a2a_blocking_mode(PyObject *self, PyObject *arg)
     return Py_None;
 }
 
-PyDoc_STRVAR(py_ff_a2a_no_mapping_doc, "Disable fastflow's mapping for this a2a");
+no_mapping_doc(py_ff_a2a_no_mapping_doc, "all to all");
 
 PyObject* py_ff_a2a_no_mapping(PyObject *self, PyObject *arg)
 {

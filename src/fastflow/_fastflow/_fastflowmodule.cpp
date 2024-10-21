@@ -68,7 +68,7 @@ fastflow_exec(PyObject *module)
     return 0;
 }
 
-PyDoc_STRVAR(ff_send_out_doc, "Send out to a node");
+doc(ff_send_out_doc, "ff_send_out(data, index=0, /)", "Send out data to the next node. Call this function from the node's svc method to send data to its successor. You can specify an optional index if you want to send data to a specific successor node");
 
 PyObject* empty_ff_send_out(PyObject *self, PyObject *args) {
     assert(self);
@@ -92,15 +92,15 @@ static PyModuleDef_Slot module_slots[] = {
 
 static struct PyModuleDef moduledef = {
     .m_base = PyModuleDef_HEAD_INIT,
-    .m_name = "fastflow",
-    .m_doc = "This is FastFlow's docstring",
+    .m_name = "fastflow._fastflow",
+    .m_doc = "This is the C extension module used by FastFlow",
     .m_size = 0,
     .m_methods = module_methods,
     .m_slots = module_slots,
 };
 
 PyMODINIT_FUNC
-PyInit_fastflow(void) {
+PyInit__fastflow(void) {
     return PyModuleDef_Init(&moduledef);
 }
 
