@@ -65,11 +65,11 @@ void run_accelerator(ff::ff_pipeline** accelerator, ff::ff_node* bb, bool use_su
 }
 
 template<typename T>
-PyObject* wait(T *node, bool use_subinterpreters) {
+PyObject* wait(ff::ff_pipeline* accelerator, T *node, bool use_subinterpreters) {
     int val = 0;
     // Release GIL while waiting for thread
     Py_BEGIN_ALLOW_THREADS
-    val = node->wait();
+    val = accelerator != nullptr ? accelerator->wait():node->wait();
     Py_END_ALLOW_THREADS
 
     if (use_subinterpreters) {
@@ -86,7 +86,7 @@ __ff_environment_string = ""
 template<typename T>
 PyObject* run_and_wait_end(T *node, bool use_subinterpreters) {
     run(node, use_subinterpreters);
-    return wait(node, use_subinterpreters);
+    return wait(nullptr, node, use_subinterpreters);
 }
 
 PyObject* submit(ff::ff_pipeline* accelerator, PyObject* arg) {

@@ -3,7 +3,8 @@
 
 #include <Python.h>
 #include <ff/ff.hpp>
-#include "py_ff_node.hpp"
+#include "mainthread/py_ff_node.hpp"
+#include "mainthread/py_ff_monode.hpp"
 #include "subint/ff_monode_subint.hpp"
 #include "subint/ff_node_subint.hpp"
 #include "process/ff_monode_process.hpp"
@@ -37,10 +38,10 @@ ff::ff_node* args_to_node(PyObject *args, PyObject *kwds, bool use_subints, bool
     bool use_main_thread = false;
     if (parse_args(args, kwds, &py_node, &use_main_thread) == -1) return NULL;
 
-    if (use_subints) {
+    if (use_main_thread) {
+        return multi_output ? (ff::ff_node*)new py_ff_monode(py_node):new py_ff_node(py_node);
+    } else if (use_subints) {
         return multi_output ? (ff::ff_node*)new ff_monode_subint(py_node):new ff_node_subint(py_node);
-    } else if (use_main_thread) {
-        return new py_ff_node(py_node);
     }
     
     return multi_output ? (ff::ff_node*)new ff_monode_process(py_node):new ff_node_process(py_node);

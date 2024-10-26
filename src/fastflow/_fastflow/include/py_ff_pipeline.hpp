@@ -140,7 +140,7 @@ PyObject* py_ff_pipeline_wait(PyObject *self, PyObject *args)
     assert(self);
 
     py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
-    return wait(_self->pipeline, _self->use_subinterpreters);
+    return wait(_self->accelerator, _self->pipeline, _self->use_subinterpreters);
 }
 
 submit_doc(py_ff_pipeline_submit_doc, "pipeline");

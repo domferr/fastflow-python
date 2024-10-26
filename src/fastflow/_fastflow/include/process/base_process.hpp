@@ -183,16 +183,23 @@ public:
         pickl.pickle(node, node_ser);
 
         TIMESTART(svc_init_fork);
-        // from cpython source code
-        // https://github.com/python/cpython/blob/9d0a75269c6ae361b1ed5910c3b3424ed93b6f6d/Modules/posixmodule.c#L8044
-        PyOS_BeforeFork();
-        pid = fork();
+        
+        auto os_mod_name = PyUnicode_FromString("os");
+        auto os_module = PyImport_GetModule(os_mod_name);
+        if (os_module == NULL) os_module = PyImport_Import(os_mod_name);
+        auto fork_func = PyObject_GetAttrString(os_module, "fork");
+        Py_DECREF(os_mod_name);
+        Py_DECREF(os_module);
+
+        auto py_pid = PyObject_CallNoArgs(fork_func);
+        pid = PyLong_AsLong(py_pid);
+        Py_DECREF(py_pid);
+        Py_DECREF(fork_func);
+        
         if (pid == -1) {
             PyErr_Format(PyExc_Exception, "Failed to fork. %s", strerror(errno));
             returnValue = -1;
         } else if (pid == 0) { // child
-            PyOS_AfterFork_Child();
-
             close(mainToChildFD[1]); // Close write end of mainToChildFD
             close(childToMainFD[0]); // Close read end of childToMainFD
 
@@ -203,7 +210,6 @@ public:
         }
 
         // parent
-        PyOS_AfterFork_Parent();
         LOGELAPSED("svc_fork time ", svc_init_fork);
         pickl.~pickling();
 

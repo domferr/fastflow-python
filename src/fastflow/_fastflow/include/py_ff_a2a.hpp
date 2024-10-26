@@ -11,7 +11,6 @@
 #include <structmember.h>
 #include <ff/ff.hpp>
 #include <iostream>
-#include "py_ff_node.hpp"
 #include "subint/ff_monode_subint.hpp"
 #include "subint/ff_node_subint.hpp"
 #include "process/ff_monode_process.hpp"
@@ -140,7 +139,7 @@ PyObject* py_ff_a2a_wait(PyObject *self, PyObject *args)
     assert(self);
 
     py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
-    return wait(_self->a2a, _self->use_subinterpreters);
+    return wait(_self->accelerator, _self->a2a, _self->use_subinterpreters);
 }
 
 submit_doc(py_ff_a2a_submit_doc, "all to all");

@@ -11,7 +11,6 @@
 #include <structmember.h>
 #include <ff/ff.hpp>
 #include <iostream>
-#include "py_ff_node.hpp"
 #include "py_ff_pipeline.hpp"
 #include <ff/multinode.hpp>
 

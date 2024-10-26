@@ -11,7 +11,6 @@
 #include <structmember.h>
 #include <ff/ff.hpp>
 #include <iostream>
-#include "py_ff_node.hpp"
 #include "subint/ff_node_subint.hpp"
 #include "process/ff_node_process.hpp"
 #include "python_args_utils.hpp"
@@ -49,6 +48,7 @@ int py_ff_farm_init(PyObject *self, PyObject *args, PyObject *kwds)
     } else if (bool_arg != nullptr && !PyBool_Check(bool_arg)) {
         PyErr_Format(PyExc_TypeError, "A bool is required (got type %s)",
                      Py_TYPE(bool_arg)->tp_name);
+        return -1;
     } else {
         m->use_subinterpreters = PyObject_IsTrue(bool_arg) == 1;
         // TODO: if we have problems with the following, then we could to PySys_GetObject("version_info");
@@ -142,7 +142,7 @@ PyObject* py_ff_farm_wait(PyObject *self, PyObject *args)
     assert(self);
 
     py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
-    return wait(_self->farm, _self->use_subinterpreters);
+    return wait(_self->accelerator, _self->farm, _self->use_subinterpreters);
 }
 
 submit_doc(py_ff_farm_submit_doc, "farm");

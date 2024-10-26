@@ -9,7 +9,6 @@ ci: clean
 
 clean:
 	rm -rf build
-	rm src/fastflow.egg-info/ -rf
 
 # example to run all the tests
 # for file in $(ls tests/python/*.py); do echo "$file" && python3.12 $file; done
