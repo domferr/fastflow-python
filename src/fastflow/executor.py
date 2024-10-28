@@ -1,20 +1,7 @@
 import os
 import sys
 from concurrent.futures import _base
-from fastflow import FFFarm, EOS
-import time
-
-class _workitem(object):
-    def __init__(self, future_id, fn, args, kwargs):
-        self.future_id = future_id
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-
-class _workresult(object):
-    def __init__(self, future_id, result = None):
-        self.future_id = future_id
-        self.result = result
+from . import FFFarm, EOS
 
 class _worker():
     def __init__(self, initializer, initargs):
@@ -22,14 +9,13 @@ class _worker():
         self._initargs = initargs
     
     def svc_init(self):
-        print("_worker svc_init")
         if self._initializer:
             self._initializer(self._initargs)
-        return 0
 
-    def svc(self, workitem: _workitem):
-        res = workitem.fn(*workitem.args, **workitem.kwargs)
-        return _workresult(workitem.future_id, res)
+    def svc(self, future_id, fn):
+        print("worker")
+        res = fn()
+        return future_id, res
 
 class FastFlowExecutor(_base.Executor):
     def __init__(self, max_workers=None, use_subinterpreters=False,
@@ -58,14 +44,14 @@ class FastFlowExecutor(_base.Executor):
             raise TypeError("initializer must be a callable")
 
         self._shutdown = False
+        self._last_id = 1
         self._pending_futures = {}
         self._farm = FFFarm(use_subinterpreters)
         self._farm.no_mapping()
         self._farm.blocking_mode(True)
         self._farm.add_workers([_worker(initializer, initargs) for _ in range(self._max_workers)])
         self._farm.add_collector(_collector(self), use_main_thread=True)
-    
-    def run(self):
+        self._farm.add_emitter(_emitter(self), use_main_thread=True)
         self._farm.run()
 
     def submit(self, fn, /, *args, **kwargs):
@@ -73,14 +59,12 @@ class FastFlowExecutor(_base.Executor):
             raise RuntimeError('cannot schedule new futures after shutdown')
 
         f = _base.Future()
-        f.set_running_or_notify_cancel()
-        timestamp_id = str(int(time.time()))
-        success = self._farm.submit(_workitem(timestamp_id, fn, args, kwargs))
+        future_id = self._last_id
+        success = self._farm.submit((future_id, fn))
         if not success:
             raise RuntimeError('failed to submit')
-        
-        self._pending_futures[timestamp_id] = f
-        print("submit", f)
+        self._last_id = self._last_id + 1
+        self._pending_futures[future_id] = f
         return f
     submit.__doc__ = _base.Executor.submit.__doc__
 
@@ -117,27 +101,31 @@ class FastFlowExecutor(_base.Executor):
     def shutdown(self, wait=True, *, cancel_futures=False):
         if self._shutdown:
             return
-        print("shutdown")
         self._shutdown = True
-        #self._farm.submit(EOS)
-        """if cancel_futures:
+        self._farm.submit(EOS)
+        if cancel_futures:
             for future in self._pending_futures:
                 future.cancel()
-            self._pending_futures = []"""
         if wait:
             self._farm.wait()
             
 
     shutdown.__doc__ = _base.Executor.shutdown.__doc__
 
+class _emitter():
+    def __init__(self, executor: FastFlowExecutor):
+        self._executor = executor
+
+    def svc(self, future_id, fn):
+        future: _base.Future = self._executor._pending_futures[future_id]
+        future.set_running_or_notify_cancel()
+        if not future.cancelled():
+            return future_id, fn
+
 class _collector():
     def __init__(self, executor: FastFlowExecutor):
         self._executor = executor
 
-    def svc(self, work_result: _workresult):
-        print("pending", self._executor._pending_futures)
-        future: _base.Future = self._executor._pending_futures[work_result.future_id]
-        print("got", future)
-        """if future and not future.cancelled():
-            print("set result", future)
-            future.set_result(work_result.result)"""
+    def svc(self, future_id, result):
+        future: _base.Future = self._executor._pending_futures[future_id]
+        future.set_result(result)
