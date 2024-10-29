@@ -37,12 +37,12 @@ public:
 
     int pickle(PyObject* object, std::string& str, int protocol = 5) {
         PyObject* decoded_bytes = pickle_bytes(object, protocol);
-        Py_ssize_t len;
-        char *res = NULL;
-        int err = PyBytes_AsStringAndSize(decoded_bytes, &res, &len);
+        Py_ssize_t len = 0;
+        char *buffer = nullptr;
+        int err = PyBytes_AsStringAndSize(decoded_bytes, &buffer, &len);
         if (err < 0) return err;
 
-        str.assign(res, len);
+        str.assign(buffer, len);
 
         Py_DECREF(decoded_bytes);
         return err;

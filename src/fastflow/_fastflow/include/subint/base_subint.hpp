@@ -15,7 +15,7 @@
 #if PY_MINOR_VERSION >= 12
 class base_subint {
 public:
-    base_subint(PyObject* node, bool is_multi_output = true): node(node), svc_func(nullptr), pickl(nullptr) {
+    base_subint(PyObject* node, bool is_multi_output = true): node(node), svc_func(nullptr), pickl(nullptr), last_data_sent(nullptr) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         Py_INCREF(node);
@@ -143,12 +143,15 @@ public:
     }
 
     void * svc(void *arg) {
+        if (arg == this->last_data_sent) arg = nullptr;
+
         TIMESTART(svc_start_time);
         // arg may be equal to ff::FF_GO_ON in case of a node of a first set of an a2a that hasn't input channels
         std::string* serialized_data = arg == ff::FF_GO_ON || arg == NULL ? NULL:reinterpret_cast<std::string*>(arg);
         
         PyObject* py_args = arg == ff::FF_GO_ON || arg == NULL ? nullptr:pickl->unpickle(*serialized_data);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
+        if (serialized_data) free(serialized_data);
         
         PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
@@ -173,7 +176,8 @@ public:
         
         LOGELAPSED("svc time ", svc_start_time);
 
-        return (void*) pickled_result;
+        this->last_data_sent = pickled_result;
+        return this->last_data_sent;
     }
 
     void cleanup() {
@@ -243,6 +247,7 @@ private:
     PyObject* svc_func;
     pickling* pickl;
     ff::ff_monode* registered_callback;
+    void* last_data_sent;
 };
 #else
 class base_subint {

@@ -1,0 +1,10 @@
+workers, tasks, ms, bytes, strategy, elapsed time (ms)
+1, 512, 1000, 100, -processpool, 512.043961316
+2, 512, 1000, 100, -processpool, 256.027616168
+4, 512, 1000, 100, -processpool, 128.022236568
+8, 512, 1000, 100, -processpool, 64.028049241
+16, 512, 1000, 100, -processpool, 32.046137612
+24, 512, 1000, 100, -processpool, 22.051607541
+32, 512, 1000, 100, -processpool, 16.104622548
+48, 512, 1000, 100, -processpool, 11.113788176
+64, 512, 1000, 100, -processpool, 8.262348204

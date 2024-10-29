@@ -14,7 +14,7 @@
 
 class base_mainthread {
 public:
-    base_mainthread(PyObject* node): node(node), svc_func(nullptr), pkl(nullptr) {
+    base_mainthread(PyObject* node): node(node), svc_func(nullptr), pkl(nullptr), last_data_sent(nullptr) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         Py_INCREF(node);
@@ -45,7 +45,7 @@ public:
                     long res_as_long = PyLong_AsLong(py_result);
                     returnValue = static_cast<int>(res_as_long);
                 }
-                if (py_result) Py_DECREF(py_result);
+                Py_XDECREF(py_result);
                 Py_DECREF(svc_init_func);
             }
         }
@@ -61,6 +61,8 @@ public:
     }
 
     void * svc(void *arg) {
+        if (arg == this->last_data_sent) arg = nullptr;
+
         // Acquire the main GIL
         PyEval_RestoreThread(tstate);
 
@@ -69,16 +71,17 @@ public:
         std::string* serialized_data = arg == ff::FF_GO_ON || arg == NULL ? NULL:reinterpret_cast<std::string*>(arg);
         PyObject* py_args = arg == ff::FF_GO_ON || arg == NULL ? nullptr:pkl->unpickle(*serialized_data);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
+        if (serialized_data) free(serialized_data);
         
         PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)
+        Py_XDECREF(py_args);
         
         void *return_value = nullptr;
         
         // map None to ff::FF_GO_ON
         // we have None also if the svc function returned nothing (e.g. void function in c++)
         if (py_result == Py_None) {
-            Py_DECREF(py_result);
             return_value = ff::FF_GO_ON;
         } else if (PyObject_TypeCheck(py_result, &py_ff_constant_type) != 0) {
             // we may have a fastflow constant as result
@@ -90,6 +93,8 @@ public:
             if (err < 0) return ff::FF_EOS;
             CHECK_ERROR_THEN("pickle result failure: ", return ff::FF_EOS;)
             return_value = (void*) pickled_result;
+            this->last_data_sent = pickled_result;
+            Py_DECREF(py_result);
         }
 
         // Release the main GIL
@@ -145,6 +150,7 @@ private:
     PyObject* svc_func;
     pickling* pkl;
     ff::ff_monode* registered_callback;
+    void* last_data_sent;
 };
 
 #endif // BASE_MAIN_THREAD

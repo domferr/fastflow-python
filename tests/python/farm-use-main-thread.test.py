@@ -1,5 +1,8 @@
 from fastflow import FFFarm, EOS
 import sys
+import tracemalloc
+
+tracemalloc.start()
 
 """
              _ worker _
@@ -16,7 +19,7 @@ class source():
         self.counter = 1
 
     def svc(self, *arg):
-        if self.counter == 12:
+        if self.counter == 8:
             return EOS
         self.counter += 1
 
@@ -42,10 +45,17 @@ def run_test(use_subinterpreters = True):
     for i in range(3):
         w = worker(f"worker{i+1}")
         w_lis.append(w)
-    farm.add_emitter(sourcenode)
+    farm.add_emitter(sourcenode, use_main_thread=True)
     farm.add_workers(w_lis)
-    farm.add_collector(sinknode, use_main_thread=True)
+    farm.add_collector(sinknode)
+    snapshot1 = tracemalloc.take_snapshot()
     farm.run_and_wait_end()
+    snapshot2 = tracemalloc.take_snapshot()
+
+    top_stats = snapshot2.compare_to(snapshot1, 'lineno')
+    print("[ Top 10 differences ]")
+    for stat in top_stats[:10]:
+        print(stat)
 
 if __name__ == "__main__":
     if sys.version_info[1] >= 12:

@@ -97,22 +97,23 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
         err = messaging.recv_message(message);
         if (err <= 0) handleError("[child] recv remote call", cleanup_exit());
         if (message.type == MESSAGE_TYPE_END_OF_LIFE) break;
-        
-        // deserialize data
-        auto py_args_tuple = pickl.unpickle(message.data[0]);
-        CHECK_ERROR_THEN("[child] deserialize data failure: ", std::cout << message.data[0] << std::endl; cleanup_exit();)
 
         // get the function reference
         PyObject *py_func = PyObject_GetAttrString(node, message.f_name.c_str());
-        Py_XINCREF(py_func);
         CHECK_ERROR_THEN("[child] get node function: ", cleanup_exit();)
 
         if (py_func) {
+            // deserialize data
+            auto py_args_tuple = pickl.unpickle(message.data[0]);
+            CHECK_ERROR_THEN("[child] deserialize data failure: ", std::cout << message.data[0] << std::endl; cleanup_exit();)
+
             // finally call the function. Use PyObject_CallObject if we have a tuple already, PyObject_CallFunctionObjArgs otherwise
             PyObject* py_result;
             if (PyTuple_Check(py_args_tuple) == 1) py_result = PyObject_CallObject(py_func, py_args_tuple);
             else py_result = PyObject_CallFunctionObjArgs(py_func, py_args_tuple, nullptr);
             CHECK_ERROR_THEN("[child] call function failure: ", cleanup_exit();)
+            Py_DECREF(py_args_tuple);
+            Py_DECREF(py_func);
 
             // we may have a fastflow constant as result
             if (PyObject_TypeCheck(py_result, &py_ff_constant_type) != 0) {
@@ -133,8 +134,6 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
                     Py_DECREF(py_result);
                 }
                 if (err <= 0) handleError("[child] send response", cleanup_exit());
-
-                Py_DECREF(py_func);
             }
         }
     }
@@ -146,7 +145,7 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
 
 class base_process {
 public:    
-    base_process(PyObject* node): node(node), messaging(-1, -1), registered_callback(NULL) {
+    base_process(PyObject* node): node(node), messaging(-1, -1), registered_callback(NULL), last_data_sent(NULL) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         Py_INCREF(node);
@@ -240,16 +239,21 @@ public:
     }
 
     void* svc(void *arg) {
+        if (arg == this->last_data_sent) arg = nullptr;
+
         TIMESTART(svc_start_time);
         // arg may be equal to ff::FF_GO_ON in case of a node of a first set of an a2a that hasn't input channels
-        std::string serialized_data = arg == NULL || arg == ff::FF_GO_ON ? SERIALIZED_EMPTY_TUPLE:*reinterpret_cast<std::string*>(arg);
+        std::string* serialized_data = arg == NULL || arg == ff::FF_GO_ON ? nullptr:reinterpret_cast<std::string*>(arg);
 
         Message response;
-        int err = messaging.call_remote(response, "svc", serialized_data);
+        int err = serialized_data == nullptr ? 
+            messaging.call_remote(response, "svc", SERIALIZED_EMPTY_TUPLE):
+            messaging.call_remote(response, "svc", *serialized_data);
         if (err <= 0) {
             handleError("remote call of svc", );
             return NULL;
         }
+        if (serialized_data) free(serialized_data);
         
         while(response.type == MESSAGE_TYPE_REMOTE_PROCEDURE_CALL) {
             // the only supported remote procedure call from the child process
@@ -283,6 +287,8 @@ public:
                 handleError("waiting for svc response", );
                 return NULL;
             }
+
+            if (data && constant != NULL) free(data);
         }
 
         // got response of svc
@@ -290,8 +296,8 @@ public:
         if (constant != NULL) return constant;
 
         LOGELAPSED("svc time ", svc_start_time);
-
-        return new std::string(response.data[0]);
+        this->last_data_sent = new std::string(response.data[0]);
+        return this->last_data_sent;
     }
 
     void svc_end() {
@@ -336,6 +342,7 @@ private:
     Messaging messaging;
     pid_t pid;
     ff::ff_monode* registered_callback;
+    void* last_data_sent;
 };
 
 #endif // BASE_PROCESS

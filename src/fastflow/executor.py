@@ -3,6 +3,13 @@ import sys
 from concurrent.futures import _base
 from . import FFFarm, EOS
 
+class _item(object):
+    def __init__(self, future_id, fn, args, kwargs):
+        self.future_id = future_id
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
 class _worker():
     def __init__(self, initializer, initargs):
         self._initializer = initializer
@@ -12,10 +19,9 @@ class _worker():
         if self._initializer:
             self._initializer(self._initargs)
 
-    def svc(self, future_id, fn):
-        print("worker")
-        res = fn()
-        return future_id, res
+    def svc(self, item: _item):
+        res = item.fn(*item.args, **item.kwargs)
+        return item.future_id, res
 
 class FastFlowExecutor(_base.Executor):
     def __init__(self, max_workers=None, use_subinterpreters=False,
@@ -60,7 +66,7 @@ class FastFlowExecutor(_base.Executor):
 
         f = _base.Future()
         future_id = self._last_id
-        success = self._farm.submit((future_id, fn))
+        success = self._farm.submit(_item(future_id, fn, args, kwargs))
         if not success:
             raise RuntimeError('failed to submit')
         self._last_id = self._last_id + 1
@@ -116,11 +122,11 @@ class _emitter():
     def __init__(self, executor: FastFlowExecutor):
         self._executor = executor
 
-    def svc(self, future_id, fn):
-        future: _base.Future = self._executor._pending_futures[future_id]
+    def svc(self, item: _item):
+        future: _base.Future = self._executor._pending_futures[item.future_id]
         future.set_running_or_notify_cancel()
         if not future.cancelled():
-            return future_id, fn
+            return item
 
 class _collector():
     def __init__(self, executor: FastFlowExecutor):
