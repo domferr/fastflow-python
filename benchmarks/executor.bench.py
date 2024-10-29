@@ -66,14 +66,8 @@ if __name__ == "__main__":
             exe = FastFlowExecutor(max_workers=args.workers, use_subinterpreters=True)
 
         with exe:
-            futures = []
             for _ in range(args.tasks):
-                N = 2000
-                # Create two large random matrices
-                A = numpy.random.rand(N, N)
-                B = numpy.random.rand(N, N)
-                futures.append(exe.submit(numpy_task, A, B))
-            #futures = [exe.submit(numpy.dot, A, B) for _ in range(args.tasks)]
-            concurrent.futures.wait(futures)
+                futures = [exe.submit(task_body) for _ in range(args.tasks)]
+                concurrent.futures.wait(futures)
     end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
     print((end - start)/1000000000)
