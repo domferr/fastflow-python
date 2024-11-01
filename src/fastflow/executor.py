@@ -2,7 +2,7 @@ import os
 import sys
 from concurrent.futures import _base
 import threading # for locking mechanisms
-from . import FFFarm, EOS
+from . import FFFarm, EOS, GO_ON
 
 class _item(object):
     def __init__(self, future_id, fn, args, kwargs):
@@ -57,6 +57,7 @@ class FastFlowExecutor(_base.Executor):
         self._farm = FFFarm(use_subinterpreters)
         self._farm.no_mapping()
         self._farm.blocking_mode(True)
+        self._farm.set_scheduling_ondemand(True)
         self._farm.add_workers([_worker(initializer, initargs) for _ in range(self._max_workers)])
         self._farm.add_collector(_collector(self), use_main_thread=True)
         self._farm.add_emitter(_emitter(self), use_main_thread=True)

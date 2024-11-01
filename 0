@@ -1,0 +1,137 @@
+svc_fork time 0ms
+svc_init time 1ms
+svc_fork time 0ms
+svc_init time 3ms
+svc_fork time 0ms
+svc_init time 4ms
+svc_fork time 0ms
+svc_init time 5ms
+svc_fork time 0ms
+svc_init time 14ms
+svc_fork time 0ms
+svc_init time 16ms
+svc_fork time 0ms
+svc_init time 18ms
+svc time 1ms
+svc time 1ms
+svc time 2ms
+svc time 0ms
+svc time 0ms
+svc time 0ms
+svc time 1ms
+svc time svc_fork time 0ms
+svc time 0ms
+svc time 0ms
+0ms
+svc_init time 44ms
+svc time 0ms
+svc_fork time 0ms
+[child] after while[child] after whilesvc_init time 
+[child] cleanup and exit
+46
+[child] cleanup and exitms
+
+svc time 1ms
+svc_fork time 0ms
+svc_init time 48ms
+svc time 0ms
+svc time 0ms
+svc time 0ms
+[child] after while
+[child] cleanup and exitsvc_end time 1
+ms
+svc_end time 1ms
+svc time 0ms
+svc time svc time 0ms
+0ms
+svc time [child] after while24
+ms[child] cleanup and exit
+
+svc_fork time svc time 0ms
+svc_end time 26ms
+53ms
+svc_end time 1ms
+svc_fork time svc time 0ms
+48ms
+svc_init time 75ms
+svc_init time 74ms
+svc_fork time 20ms
+svc time 0ms
+svc_init time 106ms
+svc time svc_fork time 0ms
+35ms
+svc_init time 108ms
+svc_fork time 59ms
+svc_init time 109ms
+svc_fork time 37ms
+svc_init time 110ms
+svc time 10ms
+svc time 0ms
+svc time 1svc time 10ms
+ms
+svc time 2ms[child] after while
+svc time 
+[child] cleanup and exit0svc time 
+0ms
+svc time 0ms
+svc time 0ms
+svc time [child] after while2
+[child] cleanup and exitsvc time 
+0ms
+ms
+svc_end time 4ms
+svc time 0ms
+ms
+svc time 5svc time 0msms
+svc time 0[child] after whilems
+[child] cleanup and exit
+
+svc_end time 6ms
+svc time 0ms
+
+[child] after while
+svc time [child] cleanup and exit
+0ms
+svc_end time 1ms
+svc time 0ms
+svc_end time 10ms
+svc time 0ms
+svc time 0ms
+svc time 0ms
+svc time 0ms
+svc time 0ms
+svc time 0
+[child] after whilems
+[child] cleanup and exit[child] after while
+
+
+[child] cleanup and exit
+svc time 0mssvc time 0ms
+
+[child] after while
+[child] cleanup and exit
+svc time 0ms
+svc_end time 1ms
+[child] after while
+svc time [child] cleanup and exit
+0ms
+svc_end time 2ms
+svc_end time 1ms
+svc_end time 1ms
+svc time 0ms
+svc time 0ms
+svc time 0ms
+svc time 0ms
+[child] after while
+[child] after while[child] after while
+[child] cleanup and exit[child] after while
+[child] cleanup and exit
+
+
+
+[child] cleanup and exit
+[child] cleanup and exit
+svc_end time 2ms
+svc_end time 2ms
+svc_end time 2ms
+svc_end time 2ms

@@ -2,7 +2,6 @@ import concurrent.futures
 from fastflow import FastFlowExecutor
 
 def example():
-    print("hey!")
     for _ in range(2**24):
         pass
 

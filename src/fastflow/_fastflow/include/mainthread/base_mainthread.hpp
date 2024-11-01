@@ -14,7 +14,7 @@
 
 class base_mainthread {
 public:
-    base_mainthread(PyObject* node): node(node), svc_func(nullptr), pkl(nullptr), last_data_sent(nullptr) {
+    base_mainthread(PyObject* node): node(node), svc_func(nullptr), pkl(nullptr), is_leftmost(-1) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         Py_INCREF(node);
@@ -61,7 +61,10 @@ public:
     }
 
     void * svc(void *arg) {
-        if (arg == this->last_data_sent) arg = nullptr;
+        // in some circumstances the node may receive as input the last data it has sent.
+        // it happens for example for nodes who doesn't have a previous node
+        if (arg == NULL) this->is_leftmost = 0; // argument is null if the node is the leftmost
+        if (this->is_leftmost == 0) arg = nullptr;
 
         // Acquire the main GIL
         PyEval_RestoreThread(tstate);
@@ -90,10 +93,13 @@ public:
         } else {
             std::string* pickled_result;
             int err = pkl->pickle_ptr(py_result, &pickled_result);
-            if (err < 0) return ff::FF_EOS;
-            CHECK_ERROR_THEN("pickle result failure: ", return ff::FF_EOS;)
+            CHECK_ERROR_THEN("pickle result failure: ", PyEval_SaveThread(); return ff::FF_EOS;)
+            if (err < 0) {
+                PyErr_SetString(PyExc_RuntimeError, "An error occurred pickling data");
+                PyEval_SaveThread();
+                return ff::FF_EOS;
+            }
             return_value = (void*) pickled_result;
-            this->last_data_sent = pickled_result;
             Py_DECREF(py_result);
         }
 
@@ -150,7 +156,7 @@ private:
     PyObject* svc_func;
     pickling* pkl;
     ff::ff_monode* registered_callback;
-    void* last_data_sent;
+    size_t is_leftmost;
 };
 
 #endif // BASE_MAIN_THREAD

@@ -20,7 +20,7 @@
 #define SERIALIZED_EMPTY_TUPLE "(t."
 #define SERIALIZED_NONE "N."
 
-void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiOutput, bool hasSvcInit) {
+void process_body(PyObject* node, int read_fd, int send_fd, bool isMultiOutput, bool hasSvcInit) {
     Messaging messaging{ send_fd, read_fd };
     Message message;
 
@@ -34,8 +34,6 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
     // Load pickling/unpickling functions
     pickling pickl;
     CHECK_ERROR_THEN("[child] load pickle/unpickle failure: ", cleanup_exit();)
-
-    PyObject* node = pickl.unpickle(node_ser);
 
     // create the callback object
     py_ff_callback_object* callback = (py_ff_callback_object*) PyObject_CallObject(
@@ -145,7 +143,7 @@ void process_body(std::string &node_ser, int read_fd, int send_fd, bool isMultiO
 
 class base_process {
 public:    
-    base_process(PyObject* node): node(node), messaging(-1, -1), registered_callback(NULL), last_data_sent(NULL) {
+    base_process(PyObject* node): node(node), messaging(-1, -1), registered_callback(NULL), is_leftmost(-1) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         Py_INCREF(node);
@@ -153,7 +151,7 @@ public:
         has_svc_end = PyObject_HasAttrString(node, "svc_end") == 1;
         pickling pickl;
     }
-    
+
     int svc_init() {
         TIMESTART(svc_init_start_time);
         // associate a new thread state with ff_node's thread
@@ -175,12 +173,6 @@ public:
         // Hold the main GIL
         PyEval_RestoreThread(tstate);
    
-        int returnValue = 0;
-        pickling pickl;
-        CHECK_ERROR_THEN("load pickle/unpickle failure: ", return -1;)
-        std::string node_ser;
-        pickl.pickle(node, node_ser);
-
         TIMESTART(svc_init_fork);
         
         auto os_mod_name = PyUnicode_FromString("os");
@@ -190,6 +182,7 @@ public:
         Py_DECREF(os_mod_name);
         Py_DECREF(os_module);
 
+        auto fork_time = std::chrono::system_clock::now();
         auto py_pid = PyObject_CallNoArgs(fork_func);
         pid = PyLong_AsLong(py_pid);
         Py_DECREF(py_pid);
@@ -197,20 +190,20 @@ public:
         
         if (pid == -1) {
             PyErr_Format(PyExc_Exception, "Failed to fork. %s", strerror(errno));
-            returnValue = -1;
+            return -1;
         } else if (pid == 0) { // child
             close(mainToChildFD[1]); // Close write end of mainToChildFD
             close(childToMainFD[0]); // Close read end of childToMainFD
 
-            pickl.~pickling();
-            process_body(node_ser, mainToChildFD[0], childToMainFD[1], registered_callback != NULL, has_svc_init);
+            process_body(node, mainToChildFD[0], childToMainFD[1], registered_callback != NULL, has_svc_init);
             PyErr_Format(PyExc_Exception, "[child] shouldn't be here... %s", strerror(errno));
-            returnValue = -1;
+            return -1;
         }
 
         // parent
         LOGELAPSED("svc_fork time ", svc_init_fork);
-        pickl.~pickling();
+        auto elapsed_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - fork_time).count();
+        std::cerr << elapsed_time_ms << std::endl;
 
         // Release the main GIL
         PyEval_SaveThread();
@@ -219,6 +212,7 @@ public:
         close(childToMainFD[1]); // Close write end of childToMainFD
 
         messaging = { mainToChildFD[1], childToMainFD[0] };
+        int returnValue = 0;
         if (has_svc_init) {
             // if the node has svc_init, the child process will call it
             // wait for svc_init result
@@ -239,7 +233,10 @@ public:
     }
 
     void* svc(void *arg) {
-        if (arg == this->last_data_sent) arg = nullptr;
+        // in some circumstances the node may receive as input the last data it has sent.
+        // it happens for example for nodes who doesn't have a previous node
+        if (arg == NULL) this->is_leftmost = 0; // argument is null if the node is the leftmost
+        if (this->is_leftmost == 0) arg = nullptr;
 
         TIMESTART(svc_start_time);
         // arg may be equal to ff::FF_GO_ON in case of a node of a first set of an a2a that hasn't input channels
@@ -296,8 +293,7 @@ public:
         if (constant != NULL) return constant;
 
         LOGELAPSED("svc time ", svc_start_time);
-        this->last_data_sent = new std::string(response.data[0]);
-        return this->last_data_sent;
+        return new std::string(response.data[0]);
     }
 
     void svc_end() {
@@ -342,7 +338,7 @@ private:
     Messaging messaging;
     pid_t pid;
     ff::ff_monode* registered_callback;
-    void* last_data_sent;
+    size_t is_leftmost;
 };
 
 #endif // BASE_PROCESS

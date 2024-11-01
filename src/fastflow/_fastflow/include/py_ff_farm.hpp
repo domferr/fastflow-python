@@ -292,12 +292,12 @@ static PyMethodDef py_ff_farm_methods[] = {
         METH_VARARGS | METH_KEYWORDS, py_ff_farm_add_emitter_doc },
     { "add_collector",    (PyCFunction) py_ff_farm_add_collector, 
         METH_VARARGS | METH_KEYWORDS, py_ff_farm_add_collector_doc },
-    { "blocking_mode", (PyCFunction) py_ff_farm_blocking_mode, 
+    { "blocking_mode",    (PyCFunction) py_ff_farm_blocking_mode, 
         METH_O, py_ff_farm_blocking_mode_doc },
     { "no_mapping", (PyCFunction) py_ff_farm_no_mapping, 
         METH_NOARGS, py_ff_farm_no_mapping_doc },
     { "set_scheduling_ondemand", (PyCFunction) py_ff_farm_set_scheduling_ondemand, 
-        METH_NOARGS, py_ff_farm_set_scheduling_ondemand_doc },
+        METH_O, py_ff_farm_set_scheduling_ondemand_doc },
     {NULL, NULL} /* Sentinel */
 };
 
