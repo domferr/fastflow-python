@@ -131,7 +131,7 @@ PyObject* py_ff_farm_run(PyObject *self, PyObject *args)
     assert(self);
 
     py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
-    run_accelerator(&_self->accelerator, _self->farm, _self->use_subinterpreters);
+    run_accelerator(&_self->accelerator, _self->farm, _self->use_subinterpreters, _self->farm->getEmitter() == nullptr, !_self->farm->hasCollector());
     return Py_None;
 }
 

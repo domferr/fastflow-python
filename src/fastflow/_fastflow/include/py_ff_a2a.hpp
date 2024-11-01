@@ -128,7 +128,7 @@ PyObject* py_ff_a2a_run(PyObject *self, PyObject *args)
     assert(self);
 
     py_ff_a2a_object* _self = reinterpret_cast<py_ff_a2a_object*>(self);
-    run_accelerator(&_self->accelerator, _self->a2a, _self->use_subinterpreters);
+    run_accelerator(&_self->accelerator, _self->a2a, _self->use_subinterpreters, true, true);
     return Py_None;
 }
 

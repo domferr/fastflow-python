@@ -129,7 +129,9 @@ PyObject* py_ff_pipeline_run(PyObject *self, PyObject *args)
     assert(self);
 
     py_ff_pipeline_object* _self = reinterpret_cast<py_ff_pipeline_object*>(self);
-    run_accelerator(&_self->accelerator, _self->pipeline, _self->use_subinterpreters);
+    auto firststage = _self->pipeline->get_firststage();
+    auto laststage = _self->pipeline->get_laststage();
+    run_accelerator(&_self->accelerator, _self->pipeline, _self->use_subinterpreters, firststage->isAll2All(), laststage->isAll2All());
     return Py_None;
 }
 

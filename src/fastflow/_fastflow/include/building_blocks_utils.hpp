@@ -52,13 +52,13 @@ for [k, v] in glb:
     node->run();
 }
 
-void run_accelerator(ff::ff_pipeline** accelerator, ff::ff_node* bb, bool use_subinterpreters) {
+void run_accelerator(ff::ff_pipeline** accelerator, ff::ff_node* bb, bool use_subinterpreters, bool place_node_behind, bool place_node_after) {
     // if it is the first time running, initialize the accelerator
     if (*accelerator == nullptr) {
         *accelerator = new ff::ff_pipeline(true);
-        (*accelerator)->add_stage(new forwarder_monode(), true);
+        if (place_node_behind) (*accelerator)->add_stage(new forwarder_monode(), true);
         (*accelerator)->add_stage(bb, false);
-        (*accelerator)->add_stage(new forwarder_minode(), true);
+        if (place_node_after) (*accelerator)->add_stage(new forwarder_minode(), true);
         (*accelerator)->no_mapping();
         (*accelerator)->blocking_mode(true);
     }
