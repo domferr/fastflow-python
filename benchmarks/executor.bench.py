@@ -52,6 +52,8 @@ if __name__ == "__main__":
     start = time.clock_gettime_ns(time.CLOCK_MONOTONIC) 
     if args.fffarm:
         farm = FFFarm()
+        farm.no_mapping()
+        farm.blocking_mode(True)
         farm.add_emitter(emitter(args.tasks, data_sample))
         farm.add_workers([worker(args.ms) for _ in range(args.workers)])
         farm.run_and_wait_end()
@@ -66,8 +68,17 @@ if __name__ == "__main__":
             exe = FastFlowExecutor(max_workers=args.workers, use_subinterpreters=True)
 
         with exe:
-            for _ in range(args.tasks):
-                futures = [exe.submit(task_body) for _ in range(args.tasks)]
-                concurrent.futures.wait(futures)
+            futures = [exe.submit(task_body, args.ms, data_sample) for _ in range(args.tasks)]
+            concurrent.futures.wait(futures)
     end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
     print((end - start)/1000000000)
+
+    """
+    futures = []
+    for _ in range(args.tasks):
+        N = 2000
+        # Create two large random matrices
+        A = numpy.random.rand(N, N)
+        B = numpy.random.rand(N, N)
+        futures.append(exe.submit(numpy_task, A, B))
+    """

@@ -1,6 +1,7 @@
 import os
 import sys
 from concurrent.futures import _base
+import threading # for locking mechanisms
 from . import FFFarm, EOS
 
 class _item(object):
@@ -52,6 +53,7 @@ class FastFlowExecutor(_base.Executor):
         self._shutdown = False
         self._last_id = 1
         self._pending_futures = {}
+        self._futures_lock = threading.Lock()
         self._farm = FFFarm(use_subinterpreters)
         self._farm.no_mapping()
         self._farm.blocking_mode(True)
@@ -65,12 +67,13 @@ class FastFlowExecutor(_base.Executor):
             raise RuntimeError('cannot schedule new futures after shutdown')
 
         f = _base.Future()
-        future_id = self._last_id
-        success = self._farm.submit(_item(future_id, fn, args, kwargs))
-        if not success:
-            raise RuntimeError('failed to submit')
-        self._last_id = self._last_id + 1
-        self._pending_futures[future_id] = f
+        with self._futures_lock:
+            future_id = self._last_id
+            success = self._farm.submit(_item(future_id, fn, args, kwargs))
+            if not success:
+                raise RuntimeError('failed to submit')
+            self._last_id = self._last_id + 1
+            self._pending_futures[future_id] = f
         return f
     submit.__doc__ = _base.Executor.submit.__doc__
 
@@ -110,8 +113,9 @@ class FastFlowExecutor(_base.Executor):
         self._shutdown = True
         self._farm.submit(EOS)
         if cancel_futures:
-            for future in self._pending_futures:
-                future.cancel()
+            with self._futures_lock:
+                for future in self._pending_futures:
+                    future.cancel()
         if wait:
             self._farm.wait()
             
@@ -123,15 +127,17 @@ class _emitter():
         self._executor = executor
 
     def svc(self, item: _item):
-        future: _base.Future = self._executor._pending_futures[item.future_id]
-        future.set_running_or_notify_cancel()
-        if not future.cancelled():
-            return item
+        with self._executor._futures_lock:
+            future: _base.Future = self._executor._pending_futures[item.future_id]
+            future.set_running_or_notify_cancel()
+            if not future.cancelled():
+                return item
 
 class _collector():
     def __init__(self, executor: FastFlowExecutor):
         self._executor = executor
 
     def svc(self, future_id, result):
-        future: _base.Future = self._executor._pending_futures[future_id]
-        future.set_result(result)
+        with self._executor._futures_lock:
+            future: _base.Future = self._executor._pending_futures[future_id]
+            future.set_result(result)

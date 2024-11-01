@@ -236,7 +236,7 @@ PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *args, PyObject* kwds)
     return PyLong_FromLong(val);
 }
 
-doc(py_ff_a2a_add_secondset_doc, "add_secondset(self, list, ondemand=False, /)", "Add second set to the all to all");
+doc(py_ff_a2a_add_secondset_doc, "add_secondset(self, list, /)", "Add second set to the all to all");
 
 PyObject* py_ff_a2a_add_secondset(PyObject *self, PyObject *args, PyObject *kwds)
 {

@@ -59,6 +59,8 @@ void run_accelerator(ff::ff_pipeline** accelerator, ff::ff_node* bb, bool use_su
         (*accelerator)->add_stage(new forwarder_monode(), true);
         (*accelerator)->add_stage(bb, false);
         (*accelerator)->add_stage(new forwarder_minode(), true);
+        (*accelerator)->no_mapping();
+        (*accelerator)->blocking_mode(true);
     }
     // finally run the building block through the accelerator
     run(*accelerator, use_subinterpreters);

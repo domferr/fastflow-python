@@ -181,7 +181,7 @@ PyObject* py_ff_farm_add_emitter(PyObject *self, PyObject *args, PyObject *kwds)
     return PyLong_FromLong(val);
 }
 
-doc(py_ff_farm_add_workers_doc, "add_workers(self, list, /)", "Add workers to the farm");
+doc(py_ff_farm_add_workers_doc, "add_workers(self, list, ondemand=False, /)", "Add workers to the farm");
 
 PyObject* py_ff_farm_add_workers(PyObject *self, PyObject *args, PyObject *kwds)
 {
@@ -257,6 +257,22 @@ PyObject* py_ff_farm_no_mapping(PyObject *self, PyObject *arg)
     return Py_None;
 }
 
+doc(py_ff_farm_set_scheduling_ondemand_doc, "set_scheduling_ondemand(self, bool, /)", "Enable or disable the ondemand scheduling");
+
+PyObject* py_ff_farm_set_scheduling_ondemand(PyObject *self, PyObject *arg)
+{
+    assert(self);
+
+    py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
+    
+    PyObject* bool_arg = PyBool_Check(arg) == 1 ? arg:Py_False;
+    bool enable = PyObject_IsTrue(bool_arg) == 1;
+
+    _self->farm->set_scheduling_ondemand(enable ? 1:0);
+
+    return Py_None;
+}
+
 static PyMethodDef py_ff_farm_methods[] = {
     { "ffTime",           (PyCFunction) py_ff_farm_ffTime, 
         METH_NOARGS, py_ff_farm_ffTime_doc },
@@ -280,6 +296,8 @@ static PyMethodDef py_ff_farm_methods[] = {
         METH_O, py_ff_farm_blocking_mode_doc },
     { "no_mapping", (PyCFunction) py_ff_farm_no_mapping, 
         METH_NOARGS, py_ff_farm_no_mapping_doc },
+    { "set_scheduling_ondemand", (PyCFunction) py_ff_farm_set_scheduling_ondemand, 
+        METH_NOARGS, py_ff_farm_set_scheduling_ondemand_doc },
     {NULL, NULL} /* Sentinel */
 };
 
