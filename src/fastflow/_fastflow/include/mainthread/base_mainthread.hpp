@@ -14,7 +14,7 @@
 
 class base_mainthread {
 public:
-    base_mainthread(PyObject* node): node(node), svc_func(nullptr), pkl(nullptr), is_leftmost(-1) {
+    base_mainthread(PyObject* node): node(node), svc_func(nullptr), pkl(nullptr), is_leftmost(false) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         Py_INCREF(node);
@@ -63,8 +63,8 @@ public:
     void * svc(void *arg) {
         // in some circumstances the node may receive as input the last data it has sent.
         // it happens for example for nodes who doesn't have a previous node
-        if (arg == NULL) this->is_leftmost = 0; // argument is null if the node is the leftmost
-        if (this->is_leftmost == 0) arg = nullptr;
+        if (arg == NULL) this->is_leftmost = true; // argument is null if the node is the leftmost
+        if (this->is_leftmost) arg = nullptr;
 
         // Acquire the main GIL
         PyEval_RestoreThread(tstate);
@@ -156,7 +156,7 @@ private:
     PyObject* svc_func;
     pickling* pkl;
     ff::ff_monode* registered_callback;
-    size_t is_leftmost;
+    bool is_leftmost;
 };
 
 #endif // BASE_MAIN_THREAD

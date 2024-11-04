@@ -143,7 +143,7 @@ void process_body(PyObject* node, int read_fd, int send_fd, bool isMultiOutput, 
 
 class base_process {
 public:    
-    base_process(PyObject* node): node(node), messaging(-1, -1), registered_callback(NULL), is_leftmost(-1) {
+    base_process(PyObject* node): node(node), messaging(-1, -1), pid(-1), registered_callback(NULL), is_leftmost(false) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         Py_INCREF(node);
@@ -152,11 +152,12 @@ public:
         pickling pickl;
     }
 
-    int svc_init() {
-        TIMESTART(svc_init_start_time);
-        // associate a new thread state with ff_node's thread
-        PyThreadState* cached_tstate = tstate;
-        tstate = PyThreadState_New(cached_tstate->interp);
+    int run(bool gil_is_acquired) {
+        if (pid != -1) return 0;
+
+        if (!gil_is_acquired) {
+            PyEval_RestoreThread(tstate);
+        }
 
         int mainToChildFD[2]; // data to be sent from main process to child process
         int childToMainFD[2]; // data to be sent from child process to main process
@@ -169,11 +170,6 @@ public:
             PyErr_Format(PyExc_Exception, "Failed to create pipe. %s", strerror(errno));
             return -1;
         }
-
-        // Hold the main GIL
-        PyEval_RestoreThread(tstate);
-   
-        TIMESTART(svc_init_fork);
         
         auto os_mod_name = PyUnicode_FromString("os");
         auto os_module = PyImport_GetModule(os_mod_name);
@@ -182,7 +178,6 @@ public:
         Py_DECREF(os_mod_name);
         Py_DECREF(os_module);
 
-        auto fork_time = std::chrono::system_clock::now();
         auto py_pid = PyObject_CallNoArgs(fork_func);
         pid = PyLong_AsLong(py_pid);
         Py_DECREF(py_pid);
@@ -200,43 +195,48 @@ public:
             return -1;
         }
 
-        // parent
-        LOGELAPSED("svc_fork time ", svc_init_fork);
-        auto elapsed_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - fork_time).count();
-        std::cerr << elapsed_time_ms << std::endl;
-
-        // Release the main GIL
-        PyEval_SaveThread();
-
-        close(mainToChildFD[0]); // Close read end of mainToChildFD
-        close(childToMainFD[1]); // Close write end of childToMainFD
-
         messaging = { mainToChildFD[1], childToMainFD[0] };
-        int returnValue = 0;
-        if (has_svc_init) {
-            // if the node has svc_init, the child process will call it
-            // wait for svc_init result
-            Message response;
-            int err = 1;
-            auto des_tuple = messaging.recv_deserialized_message<int>(response, &err);
-            if (err <= 0) {
-                returnValue = -1;
-                PyErr_Format(PyExc_Exception, "Failed to receive svc_init result. %s", strerror(errno));
-            } else {
-                returnValue = std::get<0>(des_tuple);
-            }
+        if (!gil_is_acquired) {
+            // Release the main GIL
+            PyEval_SaveThread();
         }
+        return 0;
+    }
 
-        LOGELAPSED("svc_init time ", svc_init_start_time);
-        // from here the GIL is NOT acquired
+    int svc_init() {
+        TIMESTART(svc_init_start_time);
+        // associate a new thread state with ff_node's thread
+        PyThreadState* cached_tstate = tstate;
+        tstate = PyThreadState_New(cached_tstate->interp);
+
+        this->run(false);
+
+        if (!this->has_svc_init) return 0;
+
+        int returnValue = 0;
+        // if the node has svc_init, the child process will call it
+        // while we wait for svc_init result
+        Message response;
+        int err = 1;
+        auto des_tuple = messaging.recv_deserialized_message<int>(response, &err);
+        if (err <= 0) {
+            returnValue = -1;
+            // Hold the main GIL
+            PyEval_RestoreThread(tstate);
+            PyErr_Format(PyExc_Exception, "Failed to receive svc_init result. %s", strerror(errno));
+            // Release the main GIL
+            PyEval_SaveThread();
+        } else {
+            returnValue = std::get<0>(des_tuple);
+        }
         return returnValue;
     }
 
     void* svc(void *arg) {
         // in some circumstances the node may receive as input the last data it has sent.
         // it happens for example for nodes who doesn't have a previous node
-        if (arg == NULL) this->is_leftmost = 0; // argument is null if the node is the leftmost
-        if (this->is_leftmost == 0) arg = nullptr;
+        if (arg == NULL) this->is_leftmost = true; // argument is null if the node is the leftmost
+        if (this->is_leftmost) arg = nullptr;
 
         TIMESTART(svc_start_time);
         // arg may be equal to ff::FF_GO_ON in case of a node of a first set of an a2a that hasn't input channels
@@ -338,7 +338,7 @@ private:
     Messaging messaging;
     pid_t pid;
     ff::ff_monode* registered_callback;
-    size_t is_leftmost;
+    bool is_leftmost;
 };
 
 #endif // BASE_PROCESS

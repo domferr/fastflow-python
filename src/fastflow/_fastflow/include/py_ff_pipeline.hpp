@@ -221,6 +221,10 @@ PyObject* py_ff_pipeline_add_stage(PyObject *self, PyObject *args, PyObject *kwd
                 (ff::ff_node*) new ff_monode_process(last_stage_py_node);
 
             if (last_stage->isMultiInput()) {
+                if (!last_stage->isComp())  {
+                    PyErr_SetString(PyExc_RuntimeError, "Unable to transform previous stage to multi output");
+                    return NULL;
+                }
                 (reinterpret_cast<ff::ff_comb*>(last_stage))->changeLast(new_last_stage);
             } else {
                 auto success = _self->pipeline->change_node(last_stage, new_last_stage, cleanup, true);

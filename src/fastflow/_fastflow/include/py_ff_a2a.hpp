@@ -224,7 +224,7 @@ PyObject* py_ff_a2a_add_firstset(PyObject *self, PyObject *args, PyObject* kwds)
         } else if (_self->use_subinterpreters) {
             node = new ff_monode_subint(item);
         } else if (use_main_thread) {
-            node = new py_ff_node(item);
+            node = new py_ff_monode(item);
         } else {
             node = new ff_monode_process(item);
         }
@@ -270,7 +270,6 @@ PyObject* py_ff_a2a_add_secondset(PyObject *self, PyObject *args, PyObject *kwds
         } else {
             node = new ff_node_process(item);
         }
-
         set.push_back(node);
     }
     Py_DECREF(iterator);

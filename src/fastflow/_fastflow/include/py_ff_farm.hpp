@@ -225,7 +225,11 @@ PyObject* py_ff_farm_add_collector(PyObject *self, PyObject *args, PyObject *kwd
     
     ff::ff_node* node = args_to_node(args, kwds, _self->use_subinterpreters);
     if (node == NULL) return NULL;
-
+    
+    if (!node->isMultiInput()) {
+        auto *minode = new forwarder_minode();
+        node = new ff::ff_comb(minode, node, true);
+    }
     int val = _self->farm->add_collector(node, true);
     return PyLong_FromLong(val);
 }

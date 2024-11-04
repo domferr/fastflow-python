@@ -15,7 +15,7 @@
 #if PY_MINOR_VERSION >= 12
 class base_subint {
 public:
-    base_subint(PyObject* node, bool is_multi_output = true): node(node), svc_func(nullptr), pickl(nullptr), is_leftmost(-1) {
+    base_subint(PyObject* node, bool is_multi_output = true): node(node), svc_func(nullptr), pickl(nullptr), is_leftmost(false) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         Py_INCREF(node);
@@ -145,8 +145,8 @@ public:
     void * svc(void *arg) {
         // in some circumstances the node may receive as input the last data it has sent.
         // it happens for example for nodes who doesn't have a previous node
-        if (arg == NULL) this->is_leftmost = 0; // argument is null if the node is the leftmost
-        if (this->is_leftmost == 0) arg = nullptr;
+        if (arg == NULL) this->is_leftmost = true; // argument is null if the node is the leftmost
+        if (this->is_leftmost) arg = nullptr;
 
         TIMESTART(svc_start_time);
         // arg may be equal to ff::FF_GO_ON in case of a node of a first set of an a2a that hasn't input channels
@@ -249,7 +249,7 @@ private:
     PyObject* svc_func;
     pickling* pickl;
     ff::ff_monode* registered_callback;
-    size_t is_leftmost;
+    bool is_leftmost;
 };
 #else
 class base_subint {

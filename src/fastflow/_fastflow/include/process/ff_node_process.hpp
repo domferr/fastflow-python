@@ -4,6 +4,7 @@
 #include <Python.h>
 #include <ff/ff.hpp>
 #include "base_process.hpp"
+#include <thread>
 
 #define EMPTY_TUPLE_STR "(t."
 
@@ -14,6 +15,26 @@ public:
     
     ff_node_process(PyObject* node): base(node) {
 
+    }
+
+    int dryrun() override {
+        // called by the previous node if this node is inside a combine
+        // We assume the main GIL is acquired
+        if (this->base.run(true) < 0) return -1;
+        return ff::ff_node::dryrun();
+    }
+
+    int run(bool arg) override {
+        // We assume the main GIL is acquired
+        if (this->base.run(true) < 0) return -1;
+        return ff::ff_node::run(arg);
+    }
+
+    int prepare() override {
+        // e.g. called if this node is inside an internal transformer
+        // We assume the main GIL is acquired
+        if (this->base.run(true) < 0) return -1;
+        return ff::ff_node::prepare();
     }
     
     int svc_init() override {
