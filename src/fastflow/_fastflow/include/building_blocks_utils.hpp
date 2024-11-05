@@ -27,7 +27,6 @@ void run(T *node, bool use_subinterpreters) {
         // run code to compute global declarations, imports, etc...
         PyRun_String(R"PY(
 glb = [[k,v] for k,v in globals().items() if not (k.startswith('__') and k.endswith('__'))]
-
 import inspect
 __ff_environment_string = ""
 for [k, v] in glb:
@@ -49,10 +48,12 @@ for [k, v] in glb:
         // Cleanup of objects created
         pickling_main.~pickling();
     }
+
     node->run();
 }
 
-void run_accelerator(ff::ff_pipeline** accelerator, ff::ff_node* bb, bool use_subinterpreters, bool place_node_behind, bool place_node_after) {
+template<typename T>
+void run_accelerator(ff::ff_pipeline** accelerator, T* bb, bool use_subinterpreters, bool place_node_behind, bool place_node_after) {
     // if it is the first time running, initialize the accelerator
     if (*accelerator == nullptr) {
         *accelerator = new ff::ff_pipeline(true);
@@ -68,7 +69,7 @@ void run_accelerator(ff::ff_pipeline** accelerator, ff::ff_node* bb, bool use_su
 }
 
 template<typename T>
-PyObject* wait(ff::ff_pipeline* accelerator, T *node, bool use_subinterpreters) {
+PyObject* wait(ff::ff_pipeline* accelerator, T* node, bool use_subinterpreters) {
     int val = 0;
     // Release GIL while waiting for thread
     Py_BEGIN_ALLOW_THREADS
@@ -129,4 +130,5 @@ PyObject* collect_next(ff::ff_pipeline* accelerator) {
 
     return next;
 }
+
 #endif // BUILDING_BLOCKS_UTILS_HPP

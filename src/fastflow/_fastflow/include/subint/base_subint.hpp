@@ -41,6 +41,7 @@ public:
 
         PyObject* globals = get_globals();
         PyObject* py_env_str = PyDict_GetItemString(globals, "__ff_environment_string");
+        CHECK_ERROR_THEN("PyDict_GetItemString failure: ", return -1;)
         Py_INCREF(py_env_str);
         auto env_str = PyUnicode_AsUTF8(PyObject_Str(py_env_str));
 

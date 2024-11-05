@@ -126,12 +126,24 @@ PyObject* py_ff_farm_run_and_wait_end(PyObject *self, PyObject *args)
 
 run_doc(py_ff_farm_run_doc, "farm");
 
-PyObject* py_ff_farm_run(PyObject *self, PyObject *args)
+PyObject* py_ff_farm_run(PyObject *self, PyObject *args, PyObject *kwds)
 {
     assert(self);
 
     py_ff_farm_object* _self = reinterpret_cast<py_ff_farm_object*>(self);
-    run_accelerator(&_self->accelerator, _self->farm, _self->use_subinterpreters, _self->farm->getEmitter() == nullptr, !_self->farm->hasCollector());
+    PyObject* bool_arg = Py_True; // default value is true
+    if (!PyArg_ParseTuple(args, "|O", &bool_arg)) {
+        PyErr_SetString(PyExc_TypeError, "Error parsing arguments");
+        return NULL;
+    } else if (bool_arg != nullptr && !PyBool_Check(bool_arg)) {
+        PyErr_Format(PyExc_TypeError, "A bool is required (got type %s)",
+                     Py_TYPE(bool_arg)->tp_name);
+        return NULL;
+    }
+    if (Py_IsTrue(bool_arg))
+        run_accelerator(&_self->accelerator, _self->farm, _self->use_subinterpreters, _self->farm->getEmitter() == nullptr, !_self->farm->hasCollector());
+    else
+        run(_self->farm, _self->use_subinterpreters);
     return Py_None;
 }
 
@@ -283,7 +295,7 @@ static PyMethodDef py_ff_farm_methods[] = {
     { "run_and_wait_end", (PyCFunction) py_ff_farm_run_and_wait_end, 
         METH_NOARGS, py_ff_farm_run_and_wait_end_doc },
     { "run", (PyCFunction) py_ff_farm_run, 
-        METH_NOARGS, py_ff_farm_run_doc },
+        METH_VARARGS, py_ff_farm_run_doc },
     { "wait", (PyCFunction) py_ff_farm_wait, 
         METH_NOARGS, py_ff_farm_wait_doc },
     { "submit", (PyCFunction) py_ff_farm_submit, 

@@ -1,10 +1,13 @@
 workers, tasks, ms, bytes, strategy, elapsed time (ms)
-1, 512, 5, 100, -processpool, 2.586606056
-2, 512, 5, 100, -processpool, 1.305445588
-4, 512, 5, 100, -processpool, 0.661451862
-8, 512, 5, 100, -processpool, 0.346341511
-16, 512, 5, 100, -processpool, 0.204213612
-24, 512, 5, 100, -processpool, 0.167720984
-32, 512, 5, 100, -processpool, 0.161288444
-48, 512, 5, 100, -processpool, 0.189153973
-64, 512, 5, 100, -processpool, 0.208409646
+1, 512, 5, 100, -processpool, 2.609792537
+2, 512, 5, 100, -processpool, 1.321259949
+4, 512, 5, 100, -processpool, 0.680598312
+8, 512, 5, 100, -processpool, 0.366238181
+16, 512, 5, 100, -processpool, 0.218015598
+24, 512, 5, 100, -processpool, 0.18530128
+32, 512, 5, 100, -processpool, 0.178688104
+48, 512, 5, 100, -processpool, 0.231617351
+61, 512, 5, 100, -processpool, 0.240580173
+62, 512, 5, 100, -processpool, 0.249706992
+63, 512, 5, 100, -processpool, 0.259138953
+64, 512, 5, 100, -processpool, 0.252274518

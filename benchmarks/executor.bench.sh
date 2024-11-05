@@ -21,7 +21,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 printf "workers, tasks, ms, bytes, strategy, elapsed time (ms)\n" $TASKS $MS $BYTES $STRATEGY
-for worker in 1 2 4 8 16 24 32 48 64;
+for worker in 1 2 4 8 16 24 32 48 61 62 63 64;
 do
     printf "%d, %d, %d, %d, %s, " $worker $TASKS $MS $BYTES $STRATEGY
     $PYTHON benchmarks/executor.bench.py -tasks $TASKS -workers $worker -ms $MS -bytes $BYTES $STRATEGY

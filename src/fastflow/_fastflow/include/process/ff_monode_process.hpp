@@ -16,17 +16,17 @@ public:
         base.register_callback(this);
     }
 
-    int run(bool arg) override {
-        // We assume the main GIL is acquired
-        if (this->base.run(true) < 0) return -1;
-        return ff::ff_monode::run(arg);
-    }
-
     int dryrun() override {
         // called by the previous node if this node is inside a combine
         // We assume the main GIL is acquired
         if (this->base.run(true) < 0) return -1;
         return ff::ff_monode::dryrun();
+    }
+
+    int run(bool arg) override {
+        // We assume the main GIL is acquired
+        if (this->base.run(true) < 0) return -1;
+        return ff::ff_monode::run(arg);
     }
 
     int prepare() override {
