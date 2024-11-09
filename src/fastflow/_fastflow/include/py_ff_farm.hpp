@@ -140,11 +140,12 @@ PyObject* py_ff_farm_run(PyObject *self, PyObject *args, PyObject *kwds)
                      Py_TYPE(bool_arg)->tp_name);
         return NULL;
     }
+    int res = 0;
     if (Py_IsTrue(bool_arg))
         run_accelerator(&_self->accelerator, _self->farm, _self->use_subinterpreters, _self->farm->getEmitter() == nullptr, !_self->farm->hasCollector());
     else
-        run(_self->farm, _self->use_subinterpreters);
-    return Py_None;
+        res = run(_self->farm, _self->use_subinterpreters);
+    return res == 0 ? Py_None:NULL;
 }
 
 wait_doc(py_ff_farm_wait_doc, "farm");

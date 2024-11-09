@@ -69,12 +69,11 @@ public:
         // Acquire the main GIL
         PyEval_RestoreThread(tstate);
 
-        // reinterpret_cast<PyObject*>(arg);
         // arg may be equal to ff::FF_GO_ON in case of a node of a first set of an a2a that hasn't input channels
         std::string* serialized_data = arg == ff::FF_GO_ON || arg == NULL ? NULL:reinterpret_cast<std::string*>(arg);
         PyObject* py_args = arg == ff::FF_GO_ON || arg == NULL ? nullptr:pkl->unpickle(*serialized_data);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
-        if (serialized_data) free(serialized_data);
+        //if (serialized_data) free(serialized_data);
         
         PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)

@@ -12,7 +12,7 @@ public:
     /* Inherit the constructors */
     using ff_monode::ff_monode;
     
-    ff_monode_subint(PyObject* node, bool is_multi_output = true): base(node, is_multi_output) {
+    ff_monode_subint(PyObject* node): base(node) {
         base.register_callback(this);
     }
     

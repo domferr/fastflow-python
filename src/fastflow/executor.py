@@ -2,7 +2,7 @@ import os
 import sys
 from concurrent.futures import _base
 import threading # for locking mechanisms
-from . import FFFarm, EOS, GO_ON
+from . import FFFarm, EOS
 
 class _item(object):
     def __init__(self, future_id, fn, args, kwargs):
@@ -77,36 +77,6 @@ class FastFlowExecutor(_base.Executor):
             self._pending_futures[future_id] = f
         return f
     submit.__doc__ = _base.Executor.submit.__doc__
-
-    def map(self, fn, *iterables, timeout=None, chunksize=1):
-        """Returns an iterator equivalent to map(fn, iter).
-
-        Args:
-            fn: A callable that will take as many arguments as there are
-                passed iterables.
-            timeout: The maximum number of seconds to wait. If None, then there
-                is no limit on the wait time.
-            chunksize: If greater than one, the iterables will be chopped into
-                chunks of size chunksize and submitted to the process pool.
-                If set to one, the items in the list will be sent one at a time.
-
-        Returns:
-            An iterator equivalent to: map(func, *iterables) but the calls may
-            be evaluated out-of-order.
-
-        Raises:
-            TimeoutError: If the entire result iterator could not be generated
-                before the given timeout.
-            Exception: If fn(*args) raises for any values.
-        """
-        raise BaseException("Not implemented yet")
-        if chunksize < 1:
-            raise ValueError("chunksize must be >= 1.")
-
-        results = super().map(partial(_process_chunk, fn),
-                              itertools.batched(zip(*iterables), chunksize),
-                              timeout=timeout)
-        return _chain_from_iterable_of_lists(results)
 
     def shutdown(self, wait=True, *, cancel_futures=False):
         if self._shutdown:

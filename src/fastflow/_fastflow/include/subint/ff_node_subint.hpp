@@ -12,7 +12,7 @@ public:
     /* Inherit the constructors */
     using ff_node::ff_node;
     
-    ff_node_subint(PyObject* node, bool is_multi_output = true): base(node, is_multi_output) {
+    ff_node_subint(PyObject* node): base(node) {
 
     }
     

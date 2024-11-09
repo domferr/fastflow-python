@@ -24,3 +24,7 @@ options:
   -sub              Use subinterpreters to process tasks
   -seq              Run tasks sequentially
 ```
+
+# Results
+
+Benchmark notebook at https://github.com/domferr/masterdegree/blob/main/thesis/graph.ipynb

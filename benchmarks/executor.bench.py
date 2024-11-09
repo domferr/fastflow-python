@@ -2,7 +2,6 @@ import busy_wait
 import argparse
 import time
 import concurrent.futures
-import numpy
 from fastflow import FastFlowExecutor, FastFlowFarmExecutor
 
 def get_data_sample(task_bytes):
@@ -14,6 +13,7 @@ def task_body(ms, data_sample):
     busy_wait.wait(ms)
 
 def numpy_task(A, B):
+    import numpy
     numpy.dot(A, B)
 
 if __name__ == "__main__":
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         futures = [exe.submit(task_body, args.ms, data_sample) for _ in range(args.tasks)]
         concurrent.futures.wait(futures)
     end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
-    print((end - start)/1000000000)
+    print((end - start)/1000000000, end='')
 
     """
     futures = []

@@ -15,12 +15,12 @@ struct forwarder_monode: ff::ff_monode {
 };
 
 template<typename T>
-void run(T *node, bool use_subinterpreters) {
+int run(T *node, bool use_subinterpreters) {
     PyObject* globals = NULL;
     if (use_subinterpreters) {
         // Load pickling/unpickling functions but in the main interpreter
         pickling pickling_main;
-        CHECK_ERROR_THEN("load pickle and unpickle failure: ", return;)
+        CHECK_ERROR_THEN("load pickle and unpickle failure: ", return -1;)
         
         globals = get_globals();
         
@@ -28,8 +28,15 @@ void run(T *node, bool use_subinterpreters) {
         PyRun_String(R"PY(
 glb = [[k,v] for k,v in globals().items() if not (k.startswith('__') and k.endswith('__'))]
 import inspect
+to_skip = set()
+to_skip.add("concurrent")
+to_skip.add("FastFlowExecutor")
+to_skip.add("FastFlowFarmExecutor")
+global __ff_environment_string
 __ff_environment_string = ""
 for [k, v] in glb:
+    if k in to_skip:
+        continue
     try:
         if inspect.ismodule(v):
             if v.__package__:
@@ -44,12 +51,13 @@ for [k, v] in glb:
     except:
         pass
         )PY", Py_file_input, globals, NULL);
-        CHECK_ERROR_THEN("PyRun_String failure: ", return;)
+        if (PyErr_Occurred()) return -1;
         // Cleanup of objects created
         pickling_main.~pickling();
     }
 
     node->run();
+    return 0;
 }
 
 template<typename T>
@@ -89,7 +97,7 @@ __ff_environment_string = ""
 
 template<typename T>
 PyObject* run_and_wait_end(T *node, bool use_subinterpreters) {
-    run(node, use_subinterpreters);
+    if (run(node, use_subinterpreters) == -1) return NULL;
     return wait(nullptr, node, use_subinterpreters);
 }
 
