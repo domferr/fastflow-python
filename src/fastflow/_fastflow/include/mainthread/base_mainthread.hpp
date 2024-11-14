@@ -73,7 +73,7 @@ public:
         std::string* serialized_data = arg == ff::FF_GO_ON || arg == NULL ? NULL:reinterpret_cast<std::string*>(arg);
         PyObject* py_args = arg == ff::FF_GO_ON || arg == NULL ? nullptr:pkl->unpickle(*serialized_data);
         CHECK_ERROR_THEN("unpickle serialized data failure: ", return NULL;)
-        //if (serialized_data) free(serialized_data);
+        if (serialized_data) free(serialized_data);
         
         PyObject* py_result = py_args != nullptr && PyTuple_Check(py_args) == 1 ? PyObject_CallObject(svc_func, py_args):PyObject_CallFunctionObjArgs(svc_func, py_args, nullptr);
         CHECK_ERROR_THEN("PyObject_CallObject failure: ", return NULL;)

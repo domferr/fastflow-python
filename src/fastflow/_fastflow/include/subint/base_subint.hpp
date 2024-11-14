@@ -93,6 +93,7 @@ public:
         int returnValue = 0;
         
         globals = get_globals();
+        PyRun_SimpleString(R"PY(print(globals()))PY");
         // if you access the methods from the module itself, replace it with the callback
         if (PyDict_SetItemString(globals, "fastflow", (PyObject*) callback) == -1) {
             CHECK_ERROR_THEN("PyDict_SetItemString failure: ", returnValue = -1;)

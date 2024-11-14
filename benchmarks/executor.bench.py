@@ -3,6 +3,7 @@ import argparse
 import time
 import concurrent.futures
 from fastflow import FastFlowExecutor, FastFlowFarmExecutor
+import numpy
 
 def get_data_sample(task_bytes):
     from string import ascii_letters
@@ -13,21 +14,23 @@ def task_body(ms, data_sample):
     busy_wait.wait(ms)
 
 def numpy_task(A, B):
-    import numpy
     numpy.dot(A, B)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run a farm of <WORKERS> workers and <TASKS> tasks. Each task is <MS>ms long and has a size of <BYTES> bytes. Using subinterpreters or multiprocessing based strategy')
     parser.add_argument('-tasks', type=int, help='Number of tasks to process', required=True)
     parser.add_argument('-workers', type=int, help='Number of workers of the farm', required=True)
-    parser.add_argument('-ms', type=int, help='Duration, in milliseconds, of one task', required=True)
     parser.add_argument('-bytes', type=int, help='The size, in bytes, of one task', required=True)
+    group2 = parser.add_mutually_exclusive_group(required=False)
+    group2.add_argument('-numpy', action='store_true', help='The task uses numpy')
+    group2.add_argument('-ms', type=int, help='Duration, in milliseconds, of one task')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-ffproc', action='store_true', help='Use FastFlow\'s multiprocessing to process tasks')
     group.add_argument('-ffsub', action='store_true', help='Use FastFlow\'s subinterpreters to process tasks')
     group.add_argument('-threadpool', action='store_true', help='Use concurrent.futures.ThreadPoolExecutor to process tasks')
     group.add_argument('-processpool', action='store_true', help='Use concurrent.futures.ProcessPoolExecutor to process tasks')
     group.add_argument('-fffarm', action='store_true', help='Use FFFarm to process tasks')
+    group.add_argument('-fffarmsub', action='store_true', help='Use FFFarm and subinterpreters to process tasks')
     args = parser.parse_args()
 
     # test the serialization to adjust the number of bytes
@@ -43,19 +46,22 @@ if __name__ == "__main__":
         exe = FastFlowExecutor(max_workers=args.workers, use_subinterpreters=True)
     elif args.fffarm:
         exe = FastFlowFarmExecutor(max_workers=args.workers)
+    elif args.fffarmsub:
+        exe = FastFlowFarmExecutor(max_workers=args.workers, use_subinterpreters=True)
     
     with exe:
-        futures = [exe.submit(task_body, args.ms, data_sample) for _ in range(args.tasks)]
-        concurrent.futures.wait(futures)
+        if args.numpy:
+            futures = []
+            for _ in range(args.tasks):
+                N = 500
+                # Create two large random matrices
+                A = numpy.random.rand(N, N)
+                B = numpy.random.rand(N, N)
+                futures.append(exe.submit(numpy_task, A, B))
+        else:
+            futures = [exe.submit(task_body, args.ms, data_sample) for _ in range(args.tasks)]
+
+    concurrent.futures.wait(futures)
+
     end = time.clock_gettime_ns(time.CLOCK_MONOTONIC)
     print((end - start)/1000000000, end='')
-
-    """
-    futures = []
-    for _ in range(args.tasks):
-        N = 2000
-        # Create two large random matrices
-        A = numpy.random.rand(N, N)
-        B = numpy.random.rand(N, N)
-        futures.append(exe.submit(numpy_task, A, B))
-    """

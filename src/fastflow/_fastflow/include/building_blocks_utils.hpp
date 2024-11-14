@@ -22,7 +22,13 @@ int run(T *node, bool use_subinterpreters) {
         pickling pickling_main;
         CHECK_ERROR_THEN("load pickle and unpickle failure: ", return -1;)
         
-        globals = get_globals();
+        PyObject* main_mod_name = PyUnicode_FromString("__main__");
+        auto main_module = PyImport_GetModule(main_mod_name);
+        if (main_module == NULL) main_module = PyImport_Import(main_mod_name);
+        Py_DECREF(main_mod_name);
+        if (!main_module) return NULL;
+        globals = PyObject_GetAttrString(main_module, "__dict__");
+        //globals = get_globals();
         
         // run code to compute global declarations, imports, etc...
         PyRun_String(R"PY(

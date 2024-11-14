@@ -284,8 +284,6 @@ public:
                 handleError("waiting for svc response", );
                 return NULL;
             }
-
-            if (data && constant != NULL) free(data);
         }
 
         // got response of svc
