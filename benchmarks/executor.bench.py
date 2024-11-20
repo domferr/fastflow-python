@@ -15,6 +15,7 @@ def task_body(ms, data_sample):
 
 def numpy_task(A, B):
     numpy.dot(A, B)
+    busy_wait.wait(25)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run a farm of <WORKERS> workers and <TASKS> tasks. Each task is <MS>ms long and has a size of <BYTES> bytes. Using subinterpreters or multiprocessing based strategy')
