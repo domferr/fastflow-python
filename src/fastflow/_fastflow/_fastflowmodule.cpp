@@ -11,6 +11,7 @@
 #include "py_ff_callback.hpp"
 #include "process/ff_monode_process.hpp"
 #include "process/ff_node_process.hpp"
+#include "process/process_messaging.hpp"
 #include "py_ff_constant.hpp"
 
 /* initialization function */
@@ -42,6 +43,14 @@ fastflow_exec(PyObject *module)
         return -1;
     
     if (PyModule_AddObject(module, "FFAllToAll", (PyObject *) &py_ff_a2a_type) < 0) {
+        return -1;
+    }
+
+    // add Messaging
+    if (PyType_Ready(&messaging_type) < 0)
+        return -1;
+    
+    if (PyModule_AddObject(module, "Messaging", (PyObject *) &messaging_type) < 0) {
         return -1;
     }
 
@@ -78,7 +87,7 @@ PyObject* empty_ff_send_out(PyObject *self, PyObject *args) {
 }
 
 static PyMethodDef module_methods[] = {
-    { "ff_send_out", (PyCFunction) empty_ff_send_out, METH_VARARGS, ff_send_out_doc },
+    //{ "ff_send_out", (PyCFunction) empty_ff_send_out, METH_VARARGS, ff_send_out_doc },
     {NULL, NULL} /* Sentinel */
 };
 

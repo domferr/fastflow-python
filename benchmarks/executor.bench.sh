@@ -23,7 +23,7 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-printf "workers, tasks, ms, bytes, strategy, runs, " $TASKS $TASKINFO $BYTES $STRATEGY $RUNS
+printf "workers, tasks, ms, bytes, strategy, runs, "
 for (( i=1; i<=$RUNS; i++ )) ; {
     printf "run$i"
     if (( $i <= $RUNS - 1 )); then
@@ -32,7 +32,7 @@ for (( i=1; i<=$RUNS; i++ )) ; {
 }
 printf "\n"
 
-for worker in 1 2 4 8 16 24 32 48 64;
+for worker in 1 4 16 32 48 54 60 62 64;
 do
     printf "%d, %d, %s, %s, %s, %s, " $worker $TASKS "$TASKINFO" $BYTES $STRATEGY $RUNS
     for (( i=0; i<$RUNS; i++ )) ; {

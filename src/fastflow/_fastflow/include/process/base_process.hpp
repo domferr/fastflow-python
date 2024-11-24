@@ -20,7 +20,7 @@
 #define SERIALIZED_EMPTY_TUPLE "(t."
 #define SERIALIZED_NONE "N."
 
-void process_body(PyObject* node, int read_fd, int send_fd, bool isMultiOutput, bool hasSvcInit) {
+/*void process_body(PyObject* node, int read_fd, int send_fd, bool isMultiOutput, bool hasSvcInit) {
     Messaging messaging{ send_fd, read_fd };
     Message message;
 
@@ -139,21 +139,21 @@ void process_body(PyObject* node, int read_fd, int send_fd, bool isMultiOutput, 
     LOG("[child] after while");
 
     cleanup_exit();
-}
+}*/
 
 class base_process {
 public:    
-    base_process(PyObject* node): node(node), messaging(-1, -1), pid(-1), registered_callback(NULL), is_leftmost(false) {
+    base_process(PyObject* node): node(node), messaging(-1, -1), pid(-1), registered_callback(NULL), is_leftmost(false), process(nullptr) {
         // initialize the thread state with main thread state
         tstate = PyThreadState_Get();
         Py_INCREF(node);
-        has_svc_init = PyObject_HasAttrString(node, "svc_init") == 1;
+        has_svc_init = false; // PyObject_HasAttrString(node, "svc_init") == 1;
         has_svc_end = PyObject_HasAttrString(node, "svc_end") == 1;
         pickling pickl;
     }
 
     int run(bool gil_is_acquired) {
-        if (pid != -1) return 0;
+        if (pid != -1 || process != nullptr) return 0;
 
         if (!gil_is_acquired) {
             PyEval_RestoreThread(tstate);
@@ -171,6 +171,29 @@ public:
             return -1;
         }
         
+        auto multiprocessing_start = std::chrono::system_clock::now();
+        PyObject *kwargs = PyDict_New();
+        auto fastflow_mod_name = PyUnicode_FromString("fastflow");
+        auto fastflow_module = PyImport_GetModule(fastflow_mod_name);
+        if (fastflow_module == NULL) fastflow_module = PyImport_Import(fastflow_mod_name);
+        auto spawn_fastflow_process = PyObject_GetAttrString(fastflow_module, "spawn_fastflow_process");
+        Py_DECREF(fastflow_mod_name);
+        Py_DECREF(fastflow_module);
+        auto args = Py_BuildValue("(OiiO)", node, mainToChildFD[0], childToMainFD[1], PyBool_FromLong(registered_callback != NULL));
+        process = PyObject_Call(spawn_fastflow_process, args, kwargs);
+        if (process == NULL) return -1;
+        
+        Py_DECREF(kwargs);
+        Py_DECREF(args);
+        Py_DECREF(spawn_fastflow_process);
+
+        auto start_func = PyObject_GetAttrString(process, "start");
+        // start the process
+        PyObject_CallNoArgs(start_func);
+        Py_DECREF(start_func);
+        auto multiprocessing_end = std::chrono::system_clock::now();
+
+        /*auto fork_start = std::chrono::system_clock::now();
         auto os_mod_name = PyUnicode_FromString("os");
         auto os_module = PyImport_GetModule(os_mod_name);
         if (os_module == NULL) os_module = PyImport_Import(os_mod_name);
@@ -193,7 +216,7 @@ public:
             process_body(node, mainToChildFD[0], childToMainFD[1], registered_callback != NULL, has_svc_init);
             PyErr_Format(PyExc_Exception, "[child] shouldn't be here... %s", strerror(errno));
             return -1;
-        }
+        }*/
 
         messaging = { mainToChildFD[1], childToMainFD[0] };
         if (!gil_is_acquired) {
@@ -262,7 +285,7 @@ public:
 
             // parse received ff_send_out request
             std::tuple<std::string, int> args = messaging.parse_data<std::string, int>(response.data);
-            // try to deserialize to constant. If it results into NULL, then it is NOT a FastFlow's constant
+            // try to deserialize to constant. If it results into NULL, then it is NOT a fastFlow's constant
             void* constant = deserialize<void*>(std::get<0>(args));
             // finally perform ff_send_out
             int index = std::get<1>(args);
@@ -312,9 +335,16 @@ public:
         Py_DECREF(node);
         node = nullptr;
         tstate = nullptr;
+
+        auto multiprocessing_start = std::chrono::system_clock::now();
+        auto join_func = PyObject_GetAttrString(process, "join");
+        // join the process
+        PyObject_CallNoArgs(join_func);
+        Py_DECREF(join_func);
+        auto multiprocessing_end = std::chrono::system_clock::now();
+
         // Release the main GIL
         PyEval_SaveThread();
-        waitpid(pid, nullptr, 0);
 
         messaging.closefds();
         LOGELAPSED("svc_end time ", svc_end_start_time);
@@ -337,6 +367,7 @@ private:
     pid_t pid;
     ff::ff_monode* registered_callback;
     bool is_leftmost;
+    PyObject* process;
 };
 
 #endif // BASE_PROCESS
