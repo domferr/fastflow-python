@@ -14,8 +14,14 @@ def task_body(ms, data_sample):
     busy_wait.wait(ms)
 
 def numpy_task(A, B):
-    numpy.dot(A, B)
-    busy_wait.wait(25)
+    C = numpy.dot(A, B)
+    #busy_wait.wait(25)
+
+def numpy_task2(N):
+    # Create two large random matrices
+    A = numpy.random.rand(N, N)
+    B = numpy.random.rand(N, N)
+    C = numpy.dot(A, B)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run a farm of <WORKERS> workers and <TASKS> tasks. Each task is <MS>ms long and has a size of <BYTES> bytes. Using subinterpreters or multiprocessing based strategy')
@@ -53,12 +59,9 @@ if __name__ == "__main__":
     with exe:
         if args.numpy:
             futures = []
+            N = 500
             for _ in range(args.tasks):
-                N = 500
-                # Create two large random matrices
-                A = numpy.random.rand(N, N)
-                B = numpy.random.rand(N, N)
-                futures.append(exe.submit(numpy_task, A, B))
+                futures.append(exe.submit(numpy_task2, N))
         else:
             futures = [exe.submit(task_body, args.ms, data_sample) for _ in range(args.tasks)]
 

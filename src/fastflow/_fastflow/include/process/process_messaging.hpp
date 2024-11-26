@@ -113,6 +113,24 @@ PyObject* messaging_send_out(PyObject *self, PyObject *data)
     return Py_None;
 }
 
+doc(messaging_send_out_int_doc, "send_out_int(self, number, /)", "Send a number through the communication channel. Used to send svc_init response");
+
+PyObject* messaging_send_out_int(PyObject *self, PyObject *data)
+{
+    assert(self);
+
+    messaging_object* _self = reinterpret_cast<messaging_object*>(self);
+    int number = PyLong_AsLong(data);
+    int err = _self->channel.send_response(number);
+
+    if (err <= 0) {
+        PyErr_SetString(PyExc_TypeError, "Error occurred sending data");
+        return NULL;
+    }
+
+    return Py_None;
+}
+
 doc(messaging_get_input_doc, "get_input(self, /)", "Blocking call to get the next input from the communication channel");
 
 PyObject* messaging_get_input(PyObject *self, PyObject *arg)
@@ -217,6 +235,8 @@ PyObject* messaging_closefds(PyObject *self, PyObject *arg)
 static PyMethodDef messaging_methods[] = {
     { "send_out", (PyCFunction) messaging_send_out, 
         METH_O, messaging_send_out_doc },
+    { "send_out_int", (PyCFunction) messaging_send_out_int, 
+        METH_O, messaging_send_out_int_doc },
     { "get_input", (PyCFunction) messaging_get_input, 
         METH_NOARGS, messaging_get_input_doc },
     { "ff_send_out", (PyCFunction) messaging_ff_send_out, 

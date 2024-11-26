@@ -16,6 +16,13 @@ struct forwarder_monode: ff::ff_monode {
 
 template<typename T>
 int run(T *node, bool use_subinterpreters) {
+    auto fastflow_mod_name = PyUnicode_FromString("fastflow");
+    auto fastflow_module = PyImport_GetModule(fastflow_mod_name);
+    if (fastflow_module == NULL) fastflow_module = PyImport_Import(fastflow_mod_name);
+    auto before_building_block_run = PyObject_GetAttrString(fastflow_module, "_before_building_block_run");
+    PyObject_CallNoArgs(before_building_block_run);
+    Py_DECREF(before_building_block_run);
+
     PyObject* globals = NULL;
     if (use_subinterpreters) {
         // Load pickling/unpickling functions but in the main interpreter
@@ -63,6 +70,14 @@ for [k, v] in glb:
     }
 
     node->run();
+
+    if (fastflow_module == NULL) fastflow_module = PyImport_Import(fastflow_mod_name);
+    auto after_building_block_run = PyObject_GetAttrString(fastflow_module, "_after_building_block_run");
+    PyObject_CallNoArgs(after_building_block_run);
+    Py_DECREF(fastflow_mod_name);
+    Py_DECREF(fastflow_module);
+    Py_DECREF(after_building_block_run);
+
     return 0;
 }
 
@@ -97,6 +112,15 @@ PyObject* wait(ff::ff_pipeline* accelerator, T* node, bool use_subinterpreters) 
 __ff_environment_string = ""
         )PY", Py_file_input, globals, NULL);
     }
+
+    auto fastflow_mod_name = PyUnicode_FromString("fastflow");
+    auto fastflow_module = PyImport_GetModule(fastflow_mod_name);
+    if (fastflow_module == NULL) fastflow_module = PyImport_Import(fastflow_mod_name);
+    auto after_building_block_wait = PyObject_GetAttrString(fastflow_module, "_after_building_block_wait");
+    Py_DECREF(fastflow_mod_name);
+    Py_DECREF(fastflow_module);
+    PyObject_CallNoArgs(after_building_block_wait);
+    Py_DECREF(after_building_block_wait);
 
     return PyLong_FromLong(val);
 }

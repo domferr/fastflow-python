@@ -5,8 +5,6 @@
 #include <ff/ff.hpp>
 #include "base_process.hpp"
 
-#define EMPTY_TUPLE_STR "(t."
-
 class ff_monode_process: public ff::ff_monode {
 public:
     /* Inherit the constructors */

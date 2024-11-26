@@ -194,7 +194,7 @@ PyObject* py_ff_farm_add_emitter(PyObject *self, PyObject *args, PyObject *kwds)
     return PyLong_FromLong(val);
 }
 
-doc(py_ff_farm_add_workers_doc, "add_workers(self, list, ondemand=False, /)", "Add workers to the farm");
+doc(py_ff_farm_add_workers_doc, "add_workers(self, list, /)", "Add workers to the farm");
 
 PyObject* py_ff_farm_add_workers(PyObject *self, PyObject *args, PyObject *kwds)
 {

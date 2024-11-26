@@ -6,8 +6,6 @@
 #include "base_process.hpp"
 #include <thread>
 
-#define EMPTY_TUPLE_STR "(t."
-
 class ff_node_process: public ff::ff_node {
 public:
     /* Inherit the constructors */

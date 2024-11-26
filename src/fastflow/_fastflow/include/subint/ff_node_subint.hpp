@@ -5,8 +5,6 @@
 #include <ff/ff.hpp>
 #include "base_subint.hpp"
 
-#define EMPTY_TUPLE_STR "(t."
-
 class ff_node_subint: public ff::ff_node {
 public:
     /* Inherit the constructors */
